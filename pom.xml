@@ -10,11 +10,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.papeleria</groupId>
-    <artifactId>papeleria</artifactId>
+    <groupId>com.SICOIL</groupId>
+    <artifactId>SICOIL</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>papeleria</name>
-    <description>Sistema de ventas de papeleria</description>
+    <name>SICOIL</name>
+    <description>Sistema de ventas de SICOIL</description>
 
     <properties>
         <java.version>17</java.version>
