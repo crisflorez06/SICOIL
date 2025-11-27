@@ -1,0 +1,25 @@
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1 0 auto;
+}
+
+/* Solución para que los mensajes de Angular Material (MatSnackBar)
+       aparezcan por encima de los modales de Bootstrap. */
+.cdk-overlay-container {
+  z-index: 1060 !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}

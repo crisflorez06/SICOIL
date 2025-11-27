@@ -1,0 +1,16 @@
+.page {
+  padding: 1.5rem;
+}
+
+.page-header {
+  margin-bottom: 1rem;
+}
+
+.table {
+  margin-top: 1rem;
+}
+
+.btn-outline-danger:hover i,
+.btn-outline-success:hover i {
+  color: #fff !important;
+}
