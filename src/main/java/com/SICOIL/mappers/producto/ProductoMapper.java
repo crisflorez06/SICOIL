@@ -1,40 +1,24 @@
 package com.SICOIL.mappers.producto;
 
-import com.SICOIL.dtos.ProductoRequest;
-import com.SICOIL.dtos.ProductoResponse;
+import com.SICOIL.dtos.producto.ProductoRequest;
+import com.SICOIL.dtos.producto.ProductoResponse;
 import com.SICOIL.models.Producto;
-import java.util.List;
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface ProductoMapper {
 
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "nombre", source = "nombre")
-    @Mapping(target = "descripcion", source = "descripcion")
-    @Mapping(target = "precioCompra", source = "precioCompra")
-    @Mapping(target = "precioVenta", source = "precioVenta")
-    @Mapping(target = "stock", source = "stock")
-    @Mapping(target = "categoria", source = "categoria")
-    Producto toEntity(ProductoRequest request);
+    @Mapping(target = "id", ignore = true)
+    Producto requestToEntity(ProductoRequest request);
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "nombre", source = "nombre")
-    @Mapping(target = "descripcion", source = "descripcion")
-    @Mapping(target = "precioCompra", source = "precioCompra")
-    @Mapping(target = "precioVenta", source = "precioVenta")
-    @Mapping(target = "stock", source = "stock")
-    @Mapping(target = "categoria", source = "categoria")
-    @Mapping(target = "fechaRegistro", source = "fechaRegistro")
-    @Mapping(target = "estado", source = "estado")
-    ProductoResponse toResponse(Producto producto);
+    @Mapping(target = "id", ignore = true)
+    void updateEntityFromRequest(ProductoRequest request, @MappingTarget Producto entity);
 
-    List<ProductoResponse> toResponseList(List<Producto> productos);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromRequest(ProductoRequest request, @MappingTarget Producto producto);
+    ProductoResponse entitytoResponse(Producto producto);
 }

@@ -8,11 +8,13 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,16 +38,25 @@ public class Venta {
     private Long id;
 
     @NotNull
-    @Column(nullable = false)
-    private LocalDateTime fecha;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cliente_id", nullable = false)
+    private Cliente cliente;
 
     @NotNull
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal total;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 
-    @NotBlank
-    @Column(name = "metodo_pago", nullable = false)
-    private String metodoPago;
+    @NotNull
+    @Column(nullable = false, length = 20)
+    private String estado;
+
+    @NotNull
+    @Column(nullable = false)
+    private Double total;
+
+    @Column(name = "fecha_registro", nullable = false, updatable = false)
+    private LocalDateTime fechaRegistro;
 
     @Builder.Default
     @JsonManagedReference
@@ -55,5 +66,12 @@ public class Venta {
     public void agregarDetalle(DetalleVenta detalle) {
         detalle.setVenta(this);
         this.detalles.add(detalle);
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDateTime.now();
+        }
     }
 }

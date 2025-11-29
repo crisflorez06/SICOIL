@@ -3,6 +3,8 @@ package com.SICOIL.models;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,7 +14,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -25,7 +26,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "detalles_venta")
+@Table(name = "venta_detalle")
 public class DetalleVenta {
 
     @Id
@@ -38,14 +39,14 @@ public class DetalleVenta {
     private Integer cantidad;
 
     @NotNull
-    @Positive
-    @Column(name = "precio_unitario", nullable = false, precision = 10, scale = 2)
-    private BigDecimal precioUnitario;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_venta", nullable = false, length = 20)
+    private TipoVenta tipoVenta;
 
     @NotNull
     @Positive
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal subtotal;
+    @Column(nullable = false)
+    private Double subtotal;
 
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

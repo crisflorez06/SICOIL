@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ActualizarGastoRequest, CrearGastoRequest, Gasto } from '../models/gasto.model';
+import { ActualizarGastoRequest, CrearGastoRequest, Gasto } from '../models/compra.model';
 
 @Injectable({ providedIn: 'root' })
 export class GastoService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/gastos`;
+  private apiUrl = `${environment.apiUrl}/compras`;
 
   listar(filtros?: { nombre?: string; desde?: string; hasta?: string }): Observable<Gasto[]> {
     let params = new HttpParams();

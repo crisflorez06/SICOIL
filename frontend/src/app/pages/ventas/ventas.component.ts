@@ -19,8 +19,8 @@ import { ApiErrorService } from '../../core/services/api-error.service';
 import { MensajeService } from '../../services/mensaje.service';
 import { VentaRequest, VentaResponse } from '../../models/venta.model';
 import { VentaService } from '../../services/venta.service';
-import { ActualizarGastoRequest, CrearGastoRequest, Gasto } from '../../models/gasto.model';
-import { GastoService } from '../../services/gasto.service';
+import { ActualizarGastoRequest, CrearGastoRequest, Gasto } from '../../models/compra.model';
+import { GastoService } from '../../services/compra.service';
 
 @Component({
   selector: 'app-ventas',
@@ -54,7 +54,8 @@ export class VentasComponent implements OnInit {
     totalGenerado: number;
     fecha: string;
   }[] = [];
-  public vistaActual: 'ventas' | 'productos' | 'gastos' = 'ventas';
+  public vistaActual: 'ventas' | 'productos' | 'compras' = 'ventas';
+  public usuarioIdPredeterminado = 1;
 
   public totalVentasEnTabla = 0;
   public totalElementos = 0;
@@ -96,7 +97,7 @@ export class VentasComponent implements OnInit {
   public totalModalVenta = 0;
   public ventaSeleccionada: VentaResponse | null = null;
   public ventaAEliminar: VentaResponse | null = null;
-  public gastos: Gasto[] = [];
+  public compras: Gasto[] = [];
   public cargandoGastos = false;
   public creandoGasto = false;
   public gastoSeleccionado: Gasto | null = null;
@@ -105,6 +106,7 @@ export class VentasComponent implements OnInit {
   public eliminandoGasto = false;
 
   formularioVenta = this.fb.nonNullable.group({
+    usuarioId: [1, [Validators.required, Validators.min(1)]],
     metodoPago: ['Efectivo', Validators.required],
     detalles: this.fb.array(this.crearDetalleArray()),
   });
@@ -165,7 +167,7 @@ export class VentasComponent implements OnInit {
   }
 
   public mostrarGastos(): void {
-    this.vistaActual = 'gastos';
+    this.vistaActual = 'compras';
     this.formularioGasto.reset({ monto: null, descripcion: '' });
     this.apiErrorService.clearFormErrors(this.formularioGasto);
     this.gastoSeleccionado = null;
@@ -182,16 +184,16 @@ export class VentasComponent implements OnInit {
       hasta: this.filtrosGastos.hasta,
     };
     this.gastoService.listar(filtros).subscribe({
-      next: (gastos: Gasto[]) => {
-        this.gastos = gastos;
-        this.totalGastos = gastos.reduce((total, gasto) => total + Number(gasto.monto ?? 0), 0);
+      next: (compras: Gasto[]) => {
+        this.compras = compras;
+        this.totalGastos = compras.reduce((total, compra) => total + Number(compra.monto ?? 0), 0);
         this.cargandoGastos = false;
       },
       error: (error: unknown) => {
         this.apiErrorService.handle(error, {
-          contextMessage: 'Error al cargar los gastos.',
+          contextMessage: 'Error al cargar los compras.',
         });
-        this.gastos = [];
+        this.compras = [];
         this.totalGastos = 0;
         this.cargandoGastos = false;
       },
@@ -226,7 +228,7 @@ export class VentasComponent implements OnInit {
   guardarGasto(): void {
     if (this.formularioGasto.invalid) {
       this.formularioGasto.markAllAsTouched();
-      this.mensajeService.error('Por favor completa monto y descripción del gasto.');
+      this.mensajeService.error('Por favor completa monto y descripción del compra.');
       return;
     }
 
@@ -255,17 +257,17 @@ export class VentasComponent implements OnInit {
         this.creandoGasto = false;
         this.apiErrorService.handle(error, {
           form: this.formularioGasto,
-          contextMessage: 'Error al guardar el gasto.',
+          contextMessage: 'Error al guardar el compra.',
         });
       },
     });
   }
 
-  iniciarEdicionGasto(gasto: Gasto): void {
-    this.gastoSeleccionado = gasto;
+  iniciarEdicionGasto(compra: Gasto): void {
+    this.gastoSeleccionado = compra;
     this.formularioGasto.patchValue({
-      monto: Number(gasto.monto),
-      descripcion: gasto.descripcion,
+      monto: Number(compra.monto),
+      descripcion: compra.descripcion,
     });
     this.apiErrorService.clearFormErrors(this.formularioGasto);
     this.mostrarModalGasto();
@@ -275,8 +277,8 @@ export class VentasComponent implements OnInit {
     this.cerrarModalGasto();
   }
 
-  prepararEliminacionGasto(gasto: Gasto): void {
-    this.gastoAEliminar = gasto;
+  prepararEliminacionGasto(compra: Gasto): void {
+    this.gastoAEliminar = compra;
     this.eliminandoGasto = false;
   }
 
@@ -296,7 +298,7 @@ export class VentasComponent implements OnInit {
       },
       error: (error: unknown) => {
         this.apiErrorService.handle(error, {
-          contextMessage: 'Error al eliminar el gasto.',
+          contextMessage: 'Error al eliminar el compra.',
         });
         this.gastoAEliminar = null;
         this.eliminandoGasto = false;
@@ -439,7 +441,7 @@ export class VentasComponent implements OnInit {
   abrirModalCrear(): void {
     this.ventaSeleccionada = null;
     this.detalles.clear();
-    this.formularioVenta.reset({ metodoPago: 'Efectivo' });
+    this.formularioVenta.reset({ metodoPago: 'Efectivo', usuarioId: this.usuarioIdPredeterminado });
     this.agregarDetalle(); // Agrega una fila por defecto
     this.apiErrorService.clearFormErrors(this.formularioVenta);
     this.abrirModalVenta();
@@ -449,7 +451,10 @@ export class VentasComponent implements OnInit {
   abrirModalEditar(venta: VentaResponse): void {
     this.ventaSeleccionada = venta;
     this.detalles.clear();
-    this.formularioVenta.patchValue({ metodoPago: venta.metodoPago });
+    this.formularioVenta.patchValue({
+      metodoPago: venta.metodoPago,
+      usuarioId: venta.usuarioId ?? this.usuarioIdPredeterminado,
+    });
     this.apiErrorService.clearFormErrors(this.formularioVenta);
 
     this.ventaService.obtenerDetallesPorVenta(venta.id).subscribe({

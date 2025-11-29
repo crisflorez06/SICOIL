@@ -1,3 +1,4 @@
+/*
 package com.SICOIL.repositories;
 
 import com.SICOIL.models.DetalleVenta;
@@ -16,3 +17,4 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Long
 
     List<DetalleVenta> findByVentaId(Long ventaId);
 }
+*/

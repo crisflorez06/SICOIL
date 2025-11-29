@@ -1,6 +1,7 @@
 package com.SICOIL.services.gasto;
 
-import com.SICOIL.models.Gasto;
+import com.SICOIL.models.Compra;
+
 import java.time.LocalDate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -10,7 +11,7 @@ public class GastoSpecification {
         // Utility class
     }
 
-    public static Specification<Gasto> descripcionContains(String nombre) {
+    public static Specification<Compra> descripcionContains(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -19,7 +20,7 @@ public class GastoSpecification {
         };
     }
 
-    public static Specification<Gasto> fechaBetween(LocalDate desde, LocalDate hasta) {
+    public static Specification<Compra> fechaBetween(LocalDate desde, LocalDate hasta) {
         return (root, query, cb) -> {
             if (desde == null && hasta == null) {
                 return cb.conjunction();

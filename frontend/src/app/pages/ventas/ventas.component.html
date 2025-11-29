@@ -102,7 +102,7 @@
         </div>
       </mat-expansion-panel>
     </mat-accordion>
-    <mat-accordion class="mx-5" *ngIf="vistaActual === 'gastos'">
+    <mat-accordion class="mx-5" *ngIf="vistaActual === 'compras'">
       <mat-expansion-panel [(expanded)]="filtrosAbiertos">
         <mat-expansion-panel-header>
           <mat-panel-title>Filtros de Gastos</mat-panel-title>
@@ -180,7 +180,7 @@
       <button
         type="button"
         class="btn btn-sm"
-        [ngClass]="vistaActual === 'gastos' ? 'btn-primary' : 'btn-outline-primary'"
+        [ngClass]="vistaActual === 'compras' ? 'btn-primary' : 'btn-outline-primary'"
         (click)="mostrarGastos()"
       >
         Ver Gastos
@@ -372,11 +372,11 @@
       </div>
     </div>
 
-    <div *ngIf="vistaActual === 'gastos'">
+    <div *ngIf="vistaActual === 'compras'">
       <h2 class="text-center mb-3">Gastos del Día</h2>
       <div class="badge bg-danger fs-6 p-3 shadow-sm mb-3">
         <i class="bi bi-receipt-cutoff me-1"></i>
-        Total gastos: {{ totalGastos | currency : '$ ' : 'symbol' : '1.0-0' }}
+        Total compras: {{ totalGastos | currency : '$ ' : 'symbol' : '1.0-0' }}
       </div>
       <div *ngIf="cargandoGastos" class="text-center py-4">
         <div class="spinner-border" role="status">
@@ -384,10 +384,10 @@
         </div>
       </div>
       <div *ngIf="!cargandoGastos">
-        <div *ngIf="gastos.length === 0" class="text-center text-muted py-3">
-          No hay gastos que coincidan con la búsqueda.
+        <div *ngIf="compras.length === 0" class="text-center text-muted py-3">
+          No hay compras que coincidan con la búsqueda.
         </div>
-        <div *ngIf="gastos.length > 0" class="table-responsive shadow-sm rounded">
+        <div *ngIf="compras.length > 0" class="table-responsive shadow-sm rounded">
           <table class="table table-hover align-middle text-center border">
             <thead class="table-dark">
               <tr>
@@ -398,24 +398,24 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let gasto of gastos">
-                <td class="border-end">{{ gasto.fecha | date : 'dd/MM/yyyy' }}</td>
-                <td class="border-end">{{ gasto.descripcion }}</td>
-                <td class="border-end">{{ gasto.monto | currency : '$ ' : 'symbol' : '1.0-0' }}</td>
+              <tr *ngFor="let compra of compras">
+                <td class="border-end">{{ compra.fecha | date : 'dd/MM/yyyy' }}</td>
+                <td class="border-end">{{ compra.descripcion }}</td>
+                <td class="border-end">{{ compra.monto | currency : '$ ' : 'symbol' : '1.0-0' }}</td>
                 <td>
                   <button
                     type="button"
                     class="btn btn-outline-warning btn-sm me-2"
-                    title="Editar gasto"
-                    (click)="iniciarEdicionGasto(gasto)"
+                    title="Editar compra"
+                    (click)="iniciarEdicionGasto(compra)"
                   >
                     <i class="bi bi-pencil-square"></i>
                   </button>
                   <button
                     type="button"
                     class="btn btn-outline-danger btn-sm"
-                    title="Eliminar gasto"
-                    (click)="prepararEliminacionGasto(gasto)"
+                    title="Eliminar compra"
+                    (click)="prepararEliminacionGasto(compra)"
                   >
                     <i class="bi bi-trash"></i>
                   </button>
@@ -429,7 +429,7 @@
           class="alert alert-warning d-flex justify-content-between align-items-center mt-3"
         >
           <span>
-            ¿Deseas eliminar el gasto "<strong>{{ gastoAEliminar.descripcion }}</strong>"?
+            ¿Deseas eliminar el compra "<strong>{{ gastoAEliminar.descripcion }}</strong>"?
           </span>
           <div class="d-flex gap-2">
             <button
@@ -648,7 +648,7 @@
     </div>
   </div>
 
-  <!-- Modal Registrar/Editar Gasto -->
+  <!-- Modal Registrar/Editar Compra -->
   <div
     class="modal fade"
     id="gastoModal"
@@ -683,7 +683,7 @@
                 min="1"
                 class="form-control"
                 formControlName="monto"
-                placeholder="Valor del gasto"
+                placeholder="Valor del compra"
               />
             </div>
             <div class="mb-3">
@@ -716,7 +716,7 @@
                   role="status"
                   aria-hidden="true"
                 ></span>
-                {{ gastoSeleccionado ? 'Guardar cambios' : 'Registrar gasto' }}
+                {{ gastoSeleccionado ? 'Guardar cambios' : 'Registrar compra' }}
               </button>
             </div>
           </form>

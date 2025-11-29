@@ -1,8 +1,9 @@
+/*
 package com.SICOIL.services.reporte;
 
-import com.SICOIL.dtos.ProductoMasVendidoResponse;
-import com.SICOIL.dtos.ProductoResponse;
-import com.SICOIL.dtos.ReporteGeneralResponse;
+import com.SICOIL.dtos.reporte.ProductoMasVendidoResponse;
+import com.SICOIL.dtos.producto.ProductoResponse;
+import com.SICOIL.dtos.reporte.ReporteGeneralResponse;
 import com.SICOIL.mappers.producto.ProductoMapper;
 import com.SICOIL.models.Producto;
 import com.SICOIL.repositories.GastoRepository;
@@ -41,7 +42,7 @@ public class ReporteService {
         BigDecimal totalDineroEnVentas = ventaRepository.sumTotalByFechaBetween(inicio, fin);
         BigDecimal totalGastos = gastoRepository.sumMontoByFechaBetween(fechaInicio, fechaFin);
         BigDecimal totalGananciasNetas = totalGanancias.subtract(totalGastos);
-        Long totalVentas = ventaRepository.countByFechaBetween(inicio, fin);
+        Long totalVentas = ventaRepository.countByFechaRegistroBetween(inicio, fin);
         List<ProductoMasVendidoResponse> productosMasVendidos = obtenerProductosMasVendidos(inicio, fin);
 
         return ReporteGeneralResponse.builder()
@@ -78,3 +79,4 @@ public class ReporteService {
             .build();
     }
 }
+*/

@@ -10,15 +10,17 @@ import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSpecificationExecutor<Producto> {
 
-    List<Producto> findByStockLessThanEqual(Integer stock);
+    Optional<Producto> findById(Long id);
 
+    //consulta para traer una lista de los nombres sin repetir para usar al momento de crear un registro, es solo informativo
     @Query("SELECT DISTINCT p.nombre FROM Producto p")
     List<String> findDistinctNombres();
-
-    @Query("SELECT DISTINCT p.categoria FROM Producto p")
-    List<String> findDistinctCategoria();
 
     boolean existsByNombreIgnoreCase(String nombre);
 
     Optional<Producto> findByNombreIgnoreCase(String nombre);
+
+    @Query("SELECT p.nombre AS nombre, SUM(p.stock) AS stockTotal, MAX(p.cantidadPorCajas) AS cantidadPorCajas " +
+            "FROM Producto p GROUP BY p.nombre")
+    List<ProductosSInPrecio> inventarioAgrupado();
 }

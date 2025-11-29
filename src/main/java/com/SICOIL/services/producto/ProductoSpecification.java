@@ -18,22 +18,4 @@ public final class ProductoSpecification {
         };
     }
 
-    public static Specification<Producto> hasCategoria(String categoria) {
-        return (root, query, criteriaBuilder) -> {
-            if (categoria == null || categoria.isBlank()) {
-                return criteriaBuilder.conjunction();
-            }
-            String filtro = "%" + categoria.trim().toLowerCase() + "%";
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("categoria")), filtro);
-        };
-    }
-
-    public static Specification<Producto> hasEstado(Boolean estado) {
-        return (root, query, criteriaBuilder) -> {
-            if (estado == null) {
-                return criteriaBuilder.conjunction();
-            }
-            return criteriaBuilder.equal(root.get("estado"), estado);
-        };
-    }
 }

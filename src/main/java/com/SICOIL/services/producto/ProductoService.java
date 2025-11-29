@@ -1,158 +1,172 @@
 package com.SICOIL.services.producto;
 
-import com.SICOIL.dtos.MovimientoEntradaProductoRequest;
-import com.SICOIL.dtos.ProductoRequest;
+import com.SICOIL.dtos.producto.*;
 import com.SICOIL.mappers.producto.ProductoMapper;
 import com.SICOIL.models.Producto;
-import com.SICOIL.services.movimiento.MovimientoService;
 import com.SICOIL.repositories.ProductoRepository;
+import com.SICOIL.services.InventarioService;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class ProductoService {
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+    private final ProductoMapper productoMapper;
+    private final InventarioService inventarioService;
 
-    @Autowired
-    private ProductoMapper productoMapper;
+    @Transactional(readOnly = true)
+    public PaginaProductoResponse buscar(
+            String nombreFiltro,
+            int page,
+            int size
+    ) {
 
-    @Autowired
-    private MovimientoService movimientoService;
+        // 1. Filtro con Specification
+        Specification<Producto> spec =
+                Specification.where(ProductoSpecification.hasNombre(nombreFiltro));
 
-    public Page<Producto> buscarTodos(Pageable pageable, String nombre, String categoria, Boolean estado) {
+        List<Producto> productos = productoRepository.findAll(spec);
 
-        Specification<Producto> spec = Specification.where(ProductoSpecification.hasNombre(nombre))
-                .and(ProductoSpecification.hasCategoria(categoria));
+        // 2. Agrupar productos por nombre
+        Map<String, List<Producto>> grupos = productos.stream()
+                .collect(Collectors.groupingBy(Producto::getNombre));
 
-        if (estado != null && !estado) {
-            spec = spec.and(ProductoSpecification.hasEstado(false));
-        } else {
-            spec = spec.and(ProductoSpecification.hasEstado(true));
-        }
+        // 3. Convertir cada grupo en DTO padre (plegable)
+        List<ProductosAgrupadosResponse> listaCompleta = grupos.entrySet().stream()
+                .map(entry -> {
+                    String nombre = entry.getKey();
+                    List<Producto> variantes = entry.getValue();
 
-        return productoRepository.findAll(spec, pageable);
+                    ProductosAgrupadosResponse dto = new ProductosAgrupadosResponse();
+                    dto.setNombre(nombre);
+
+                    dto.setStockTotal(
+                            variantes.stream()
+                                    .mapToInt(p -> p.getStock() != null ? p.getStock() : 0)
+                                    .sum()
+                    );
+
+                    dto.setCantidadPorCajas(
+                            variantes.stream()
+                                    .map(Producto::getCantidadPorCajas)
+                                    .filter(Objects::nonNull)
+                                    .findFirst()
+                                    .orElse(0)
+                    );
+
+                    dto.setVariantes(
+                            variantes.stream()
+                                    .map(p -> {
+                                        ProductosDesagrupadosResponse v = new ProductosDesagrupadosResponse();
+                                        v.setId(p.getId());
+                                        v.setPrecioCompra(p.getPrecioCompra());
+                                        v.setStock(p.getStock());
+                                        return v;
+                                    })
+                                    .toList()
+                    );
+
+                    return dto;
+                })
+                .sorted(Comparator.comparing(ProductosAgrupadosResponse::getNombre))
+                .toList();
+
+        // 4. PAGINACIÓN EN MEMORIA
+        int totalElements = listaCompleta.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, totalElements);
+
+        List<ProductosAgrupadosResponse> pagina =
+                fromIndex < totalElements ? listaCompleta.subList(fromIndex, toIndex) : List.of();
+
+        // 5. Construir respuesta final
+        PaginaProductoResponse response = new PaginaProductoResponse();
+        response.setContent(pagina);
+        response.setPage(page);
+        response.setSize(size);
+        response.setTotalElements(totalElements);
+        response.setTotalPages(totalPages);
+
+        return response;
     }
 
-    public Producto crearProducto(ProductoRequest productoRequest) {
-        String nombreNormalizado = normalizeNombre(productoRequest.getNombre());
-        if (productoRepository.existsByNombreIgnoreCase(nombreNormalizado)) {
-            throw new IllegalArgumentException("Ya existe un producto con el nombre: " + nombreNormalizado);
+
+
+    public ProductoResponse crearProducto(ProductoRequest productoRequest) {
+
+        log.info("Creando producto '{}'", productoRequest.getNombre());
+
+        if (productoRepository.existsByNombreIgnoreCase(productoRequest.getNombre())) {
+            log.warn("Intento de crear producto duplicado '{}'", productoRequest.getNombre());
+            throw new IllegalArgumentException("Ya existe un producto con el nombre: " + productoRequest.getNombre());
         }
 
-        productoRequest.setNombre(nombreNormalizado);
-        Producto producto = productoMapper.toEntity(productoRequest);
-        Producto productoGuardado = productoRepository.save(producto);
+        Producto producto = productoMapper.requestToEntity(productoRequest);
+        Producto guardado = productoRepository.save(producto);
 
-        if (productoGuardado.getStock() != null && productoGuardado.getStock() > 0) {
-            movimientoService.registrarIngreso(productoGuardado, productoGuardado.getStock(), "Stock inicial del producto");
+        if (guardado.getStock() != null && guardado.getStock() > 0) {
+            log.debug("Registrando stock inicial para producto {} con cantidad {}", guardado.getId(), guardado.getStock());
+            inventarioService.registrarStockInicial(guardado, "Stock inicial del producto");
         }
 
-        return productoGuardado;
+        return productoMapper.entitytoResponse(guardado);
     }
 
-    public Producto actualizarProducto(Long id, ProductoRequest productoRequest) {
+    public ProductoResponse actualizarProducto(Long id, ProductoRequest productoRequest) {
+        log.info("Actualizando producto con id {}", id);
+
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
 
-        String nombreNormalizado = normalizeNombre(productoRequest.getNombre());
-        productoRepository.findByNombreIgnoreCase(nombreNormalizado)
+        if (!Objects.equals(producto.getStock(), productoRequest.getStock())) {
+            log.warn("Intento de modificar stock desde actualizar producto para id {}", id);
+            throw new IllegalArgumentException("No está permitido cambiar el stock desde actualizar producto");
+        }
+
+        productoRepository.findByNombreIgnoreCase(productoRequest.getNombre())
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new IllegalArgumentException("Ya existe un producto con el nombre: " + nombreNormalizado);
+                    throw new IllegalArgumentException("Ya existe un producto con el nombre: " + productoRequest.getNombre());
                 });
 
-        productoRequest.setNombre(nombreNormalizado);
-
         productoMapper.updateEntityFromRequest(productoRequest, producto);
-        return productoRepository.save(producto);
+
+        Producto guardado = productoRepository.save(producto);
+        return productoMapper.entitytoResponse(guardado);
     }
 
-    public Producto cambiarEstadoProducto(Long id) {
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
-
-        producto.setEstado(!producto.getEstado());
-        return productoRepository.save(producto);
+    public ProductoResponse agregarCantidadPrecioExistente(Long id, Integer cantidad, String observacion) {
+        log.info("Agregando stock a producto {} con cantidad {}", id, cantidad);
+        Producto actualizado = inventarioService.registrarEntradaExistente(id, cantidad, observacion);
+        return productoMapper.entitytoResponse(actualizado);
     }
 
-    public Producto agregarCantidad(Long id, Integer cantidad, String observacion) {
-        if (cantidad == null || cantidad == 0) {
-            throw new IllegalArgumentException("La cantidad no puede ser cero.");
-        }
-
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
-
-        int stockActual = producto.getStock() != null ? producto.getStock() : 0;
-        int nuevoStock = stockActual + cantidad;
-        if (nuevoStock < 0) {
-            throw new IllegalArgumentException(
-                    "El stock disponible (" + stockActual + ") es insuficiente para descontar la cantidad solicitada (" + Math.abs(cantidad) + ").");
-        }
-
-        producto.setStock(nuevoStock);
-        Producto productoActualizado = productoRepository.save(producto);
-        movimientoService.registrarIngreso(productoActualizado, cantidad, observacion);
-        return productoActualizado;
+    public ProductoResponse agregarCantidadPrecioNuevo(Long id, Integer cantidad, Double precioNuevo, String observacion) {
+        log.info("Agregando stock con nuevo precio al producto {} cantidad {} precio {}", id, cantidad, precioNuevo);
+        Producto actualizado = inventarioService.registrarEntradaNuevoPrecio(id, cantidad, precioNuevo, observacion);
+        return productoMapper.entitytoResponse(actualizado);
     }
 
-    private String normalizeNombre(String nombre) {
-        return nombre == null ? null : nombre.trim();
-    }
-
-    public List<Producto> agregarCantidadMasivo(List<MovimientoEntradaProductoRequest> movimientos) {
-        if (movimientos == null || movimientos.isEmpty()) {
-            throw new IllegalArgumentException("Debe proporcionar al menos un producto para actualizar.");
-        }
-
-        Map<Long, Producto> productosPorId = productoRepository.findAllById(
-                        movimientos.stream()
-                                .map(movimiento -> {
-                                    if (movimiento.getProductoId() == null) {
-                                        throw new IllegalArgumentException("El identificador del producto es obligatorio.");
-                                    }
-                                    return movimiento.getProductoId();
-                                })
-                                .collect(Collectors.toSet()))
-                .stream()
-                .collect(Collectors.toMap(Producto::getId, producto -> producto));
-
-        movimientos.forEach(movimiento -> {
-            Long productoId = movimiento.getProductoId();
-            Producto producto = productosPorId.get(productoId);
-            if (producto == null) {
-                throw new EntityNotFoundException("Producto no encontrado con id: " + productoId);
-            }
-
-            Integer cantidad = movimiento.getCantidad();
-            if (cantidad == null || cantidad == 0) {
-                throw new IllegalArgumentException("La cantidad no puede ser cero para el producto con id: " + productoId);
-            }
-
-            int stockActual = producto.getStock() != null ? producto.getStock() : 0;
-            int nuevoStock = stockActual + cantidad;
-            if (nuevoStock < 0) {
-                throw new IllegalArgumentException(
-                        "El stock disponible para el producto con id " + productoId + " es insuficiente (stock actual: "
-                                + stockActual + ", cantidad solicitada: " + Math.abs(cantidad) + ").");
-            }
-
-            producto.setStock(nuevoStock);
-            movimientoService.registrarIngreso(producto, cantidad, movimiento.getObservacion());
-        });
-
-        return productoRepository.saveAll(productosPorId.values());
+    public ProductoResponse eliminarCantidad(Long id, Integer cantidad, String observacion) {
+        log.info("Eliminando stock del producto {} cantidad {}", id, cantidad);
+        Producto actualizado = inventarioService.registrarSalida(id, cantidad, observacion);
+        return productoMapper.entitytoResponse(actualizado);
     }
 }
