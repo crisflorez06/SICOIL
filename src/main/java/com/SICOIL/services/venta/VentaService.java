@@ -8,16 +8,13 @@ import static com.SICOIL.services.venta.DetalleVentaSpecification.usuarioNombreC
 import static com.SICOIL.services.venta.DetalleVentaSpecification.ventaFechaBetween;
 
 import com.SICOIL.dtos.venta.*;
-import com.SICOIL.models.Cliente;
-import com.SICOIL.models.DetalleVenta;
-import com.SICOIL.models.Producto;
-import com.SICOIL.models.TipoVenta;
-import com.SICOIL.models.Usuario;
-import com.SICOIL.models.Venta;
+import com.SICOIL.models.*;
 import com.SICOIL.repositories.DetalleVentaRepository;
 import com.SICOIL.mappers.venta.VentaMapper;
 import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.InventarioService;
+import com.SICOIL.services.cartera.CarteraService;
+import com.SICOIL.services.cliente.ClienteService;
 import com.SICOIL.services.producto.ProductoService;
 import com.SICOIL.services.usuario.UsuarioService;
 import jakarta.persistence.EntityNotFoundException;
@@ -45,6 +42,7 @@ public class VentaService {
     private final ClienteService clienteService;
     private final VentaMapper ventaMapper;
     private final InventarioService inventarioService;
+    private final CarteraService carteraService;
 
     public Page<VentaDetalleTablaResponse> traerTodos(Pageable pageable,
                                                       String nombreProducto,
@@ -87,6 +85,7 @@ public class VentaService {
         Venta guardada = ventaRepository.save(venta);
         log.info("Venta {} persistida, ajustando inventario", guardada.getId());
         ajustarInventarioPorVenta(guardada);
+        carteraService.registrarVentaEnCartera(guardada);
         log.info("Venta {} creada con {} detalles", guardada.getId(), guardada.getDetalles().size());
         return ventaMapper.entityToResponse(guardada);
     }
@@ -109,13 +108,15 @@ public class VentaService {
         log.info("Revirtiendo inventario para venta {}", ventaId);
         revertirInventarioPorAnulacion(venta);
 
-        String usuarioActual = usuarioService.obtenerUsuarioActual().getUsuario();
+        Usuario usuarioActual = usuarioService.obtenerUsuarioActual();
         String motivo = "La venta fue anulada el " + LocalDateTime.now() +
-                " por el usuario " + usuarioActual +
+                " por el usuario " + usuarioActual.getUsuario() +
                 " por el siguiente motivo: " + razon.trim();
 
         venta.setActiva(false);
         venta.setMotivoAnulacion(motivo.trim());
+
+        carteraService.ajustarPorAnulacion(venta, usuarioActual, motivo);
 
         Venta actualizada = ventaRepository.save(venta);
         log.info("Venta {} anulada. Motivo: {}", actualizada.getId(), actualizada.getMotivoAnulacion());
