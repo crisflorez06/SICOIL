@@ -7,10 +7,7 @@ import com.SICOIL.repositories.ProductoRepository;
 import com.SICOIL.services.InventarioService;
 import jakarta.persistence.EntityNotFoundException;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -29,13 +26,21 @@ public class ProductoService {
     private final ProductoMapper productoMapper;
     private final InventarioService inventarioService;
 
+
     @Transactional(readOnly = true)
-    public PaginaProductoResponse buscar(
+    public Producto buscarPorId(Long id) {
+        return productoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public PaginaProductoResponse traerTodos(
             String nombreFiltro,
             int page,
             int size
     ) {
 
+        log.debug("Listando productos con filtro='{}' page={} size={}", nombreFiltro, page, size);
         // 1. Filtro con Specification
         Specification<Producto> spec =
                 Specification.where(ProductoSpecification.hasNombre(nombreFiltro));
@@ -152,21 +157,24 @@ public class ProductoService {
         return productoMapper.entitytoResponse(guardado);
     }
 
-    public ProductoResponse agregarCantidadPrecioExistente(Long id, Integer cantidad, String observacion) {
-        log.info("Agregando stock a producto {} con cantidad {}", id, cantidad);
-        Producto actualizado = inventarioService.registrarEntradaExistente(id, cantidad, observacion);
-        return productoMapper.entitytoResponse(actualizado);
+    @Transactional
+    public List<ProductoResponse> registrarIngresoProductos(List<IngresoProductoRequest> lista) {
+
+        List<ProductoResponse> respuestas = new ArrayList<>();
+
+        for (IngresoProductoRequest req : lista) {
+            Producto actualizado = inventarioService.registrarIngresoProducto(req);
+            respuestas.add(productoMapper.entitytoResponse(actualizado));
+        }
+
+        return respuestas;
     }
 
-    public ProductoResponse agregarCantidadPrecioNuevo(Long id, Integer cantidad, Double precioNuevo, String observacion) {
-        log.info("Agregando stock con nuevo precio al producto {} cantidad {} precio {}", id, cantidad, precioNuevo);
-        Producto actualizado = inventarioService.registrarEntradaNuevoPrecio(id, cantidad, precioNuevo, observacion);
-        return productoMapper.entitytoResponse(actualizado);
-    }
 
     public ProductoResponse eliminarCantidad(Long id, Integer cantidad, String observacion) {
         log.info("Eliminando stock del producto {} cantidad {}", id, cantidad);
         Producto actualizado = inventarioService.registrarSalida(id, cantidad, observacion);
         return productoMapper.entitytoResponse(actualizado);
     }
+
 }

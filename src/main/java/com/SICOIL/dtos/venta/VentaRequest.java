@@ -1,7 +1,7 @@
 package com.SICOIL.dtos.venta;
 
+import com.SICOIL.models.TipoVenta;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
@@ -12,13 +12,15 @@ import lombok.Setter;
 @Setter
 public class VentaRequest {
 
-    @NotBlank
-    private String metodoPago;
+    @NotNull
+    private Long clienteId;
 
     @NotNull
-    private Long usuarioId;
+    private TipoVenta tipoVenta;
+
 
     @Valid
     @NotEmpty
-    private List<DetalleVentaRequest> detalles;
+    private List<DetalleVentaRequest> items;
+
 }

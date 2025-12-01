@@ -39,11 +39,6 @@ public class DetalleVenta {
     private Integer cantidad;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_venta", nullable = false, length = 20)
-    private TipoVenta tipoVenta;
-
-    @NotNull
     @Positive
     @Column(nullable = false)
     private Double subtotal;

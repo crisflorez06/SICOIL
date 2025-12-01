@@ -1,20 +1,19 @@
 package com.SICOIL.dtos.venta;
 
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DetalleVentaResponse {
 
-    private Long id;
-    private Long productoId;
-    private String productoNombre;
+    private String producto;
     private Integer cantidad;
-    private BigDecimal precioUnitario;
-    private BigDecimal subtotal;
-    private LocalDateTime fecha;
+    private Double subtotal;
 }

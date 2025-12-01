@@ -23,4 +23,10 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
     @Query("SELECT p.nombre AS nombre, SUM(p.stock) AS stockTotal, MAX(p.cantidadPorCajas) AS cantidadPorCajas " +
             "FROM Producto p GROUP BY p.nombre")
     List<ProductosSInPrecio> inventarioAgrupado();
+
+    @Query("SELECT p.id AS id, p.precioCompra AS precioCompra FROM Producto p WHERE LOWER(p.nombre) = LOWER(:nombre)")
+    List<ProductoIdPrecio> findIdAndPrecioByNombre(@org.springframework.data.repository.query.Param("nombre") String nombre);
+
+    Optional<Producto> findFirstByNombreIgnoreCase(String nombre);
+
 }

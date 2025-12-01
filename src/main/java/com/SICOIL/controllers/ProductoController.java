@@ -3,6 +3,7 @@ package com.SICOIL.controllers;
 import com.SICOIL.dtos.invetario.entradaPrecioExistenteRequest;
 import com.SICOIL.dtos.invetario.entradaPrecioNuevoRequest;
 import com.SICOIL.dtos.invetario.salidaRequest;
+import com.SICOIL.dtos.producto.IngresoProductoRequest;
 import com.SICOIL.dtos.producto.PaginaProductoResponse;
 import com.SICOIL.dtos.producto.ProductoRequest;
 import com.SICOIL.dtos.producto.ProductoResponse;
@@ -16,6 +17,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/productos")
@@ -31,7 +34,7 @@ public class ProductoController {
             @RequestParam(required = false) String nombre
     ){
         return ResponseEntity.ok(
-                productoService.buscar(nombre, page, size)
+                productoService.traerTodos(nombre, page, size)
         );
     }
 
@@ -51,27 +54,13 @@ public class ProductoController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{id}/stock/existente")
-    public ResponseEntity<ProductoResponse> agregarCantidadPrecioExistente(
-            @PathVariable Long id,
-            @Valid @RequestBody entradaPrecioExistenteRequest request) {
 
-        ProductoResponse response =
-                productoService.agregarCantidadPrecioExistente(id, request.getCantidad(), request.getObservacion());
-        return ResponseEntity.ok(response);
+    @PostMapping("/ingreso")
+    public List<ProductoResponse> registrarIngresos(@RequestBody List<IngresoProductoRequest> lista) {
+        return productoService.registrarIngresoProductos(lista);
     }
 
-    @PatchMapping("/{id}/stock/nuevo-precio")
-    public ResponseEntity<ProductoResponse> agregarCantidadPrecioNuevo(
-            @PathVariable Long id,
-            @Valid @RequestBody entradaPrecioNuevoRequest request) {
 
-        ProductoResponse response =
-                productoService.agregarCantidadPrecioNuevo(id, request.getCantidad(),
-                        request.getPrecioNuevo(), request.getObservacion());
-
-        return ResponseEntity.ok(response);
-    }
 
     @PatchMapping("/{id}/stock/eliminar")
     public ResponseEntity<ProductoResponse> eliminarCantidad(

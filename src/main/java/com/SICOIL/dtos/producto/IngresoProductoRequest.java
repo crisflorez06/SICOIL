@@ -1,22 +1,22 @@
-package com.SICOIL.dtos.venta;
+package com.SICOIL.dtos.producto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class DetalleVentaRequest {
-    @NotNull
-    private Long productoId;
+public class IngresoProductoRequest {
 
     @NotNull
-    @Positive
-    private Integer cantidad;
+    private String nombreProducto;
 
     @NotNull
     @PositiveOrZero
-    private Double subtotal;
+    private double precioCompra;
+
+    @NotNull
+    @PositiveOrZero
+    private Integer cantidad;
 }

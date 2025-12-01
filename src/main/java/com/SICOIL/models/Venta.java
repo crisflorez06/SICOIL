@@ -13,7 +13,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,8 +47,15 @@ public class Venta {
     private Usuario usuario;
 
     @NotNull
-    @Column(nullable = false, length = 20)
-    private String estado;
+    @Column(name = "tipo_venta", nullable = false, length = 20)
+    private TipoVenta tipoVenta;
+
+    @Builder.Default
+    @Column(name = "activa", nullable = false)
+    private boolean activa = true;
+
+    @Column(name = "motivo_anulacion", length = 500)
+    private String motivoAnulacion;
 
     @NotNull
     @Column(nullable = false)
@@ -63,10 +69,6 @@ public class Venta {
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DetalleVenta> detalles = new ArrayList<>();
 
-    public void agregarDetalle(DetalleVenta detalle) {
-        detalle.setVenta(this);
-        this.detalles.add(detalle);
-    }
 
     @PrePersist
     public void prePersist() {

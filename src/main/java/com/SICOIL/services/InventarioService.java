@@ -1,7 +1,9 @@
 package com.SICOIL.services;
 
+import com.SICOIL.dtos.producto.IngresoProductoRequest;
 import com.SICOIL.models.MovimientoTipo;
 import com.SICOIL.models.Producto;
+import com.SICOIL.repositories.ProductoIdPrecio;
 import com.SICOIL.repositories.ProductoRepository;
 import com.SICOIL.services.kardex.KardexService;
 import jakarta.persistence.EntityNotFoundException;
@@ -9,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -19,7 +23,7 @@ public class InventarioService {
     private final ProductoRepository productoRepository;
     private final KardexService kardexService;
 
-    public Producto registrarEntradaExistente(Long productoId, Integer cantidad, String observacion) {
+    public Producto registrarMovimiento(Long productoId, Integer cantidad, String observacion) {
         if (cantidad == null || cantidad <= 0) {
             log.warn("Cantidad inválida ({}) al registrar entrada existente para producto {}", cantidad, productoId);
             throw new IllegalArgumentException("La cantidad debe ser mayor a cero.");
@@ -65,42 +69,47 @@ public class InventarioService {
         return guardado;
     }
 
-    public Producto registrarEntradaNuevoPrecio(Long productoId,
-                                                Integer cantidad,
-                                                Double precioNuevo,
-                                                String observacion) {
-        if (cantidad == null || cantidad <= 0) {
-            log.warn("Cantidad inválida ({}) al registrar entrada nuevo precio para producto {}", cantidad, productoId);
-            throw new IllegalArgumentException("La cantidad debe ser mayor a cero.");
-        }
-        if (precioNuevo == null || precioNuevo < 0) {
-            log.warn("Precio inválido ({}) al registrar entrada nuevo precio para producto {}", precioNuevo, productoId);
-            throw new IllegalArgumentException("El precio nuevo debe ser mayor o igual a cero.");
-        }
+    public Producto registrarIngresoProducto(IngresoProductoRequest request) {
 
-        log.info("Registrando entrada con nuevo precio. Producto {} cantidad {} precio {}", productoId, cantidad, precioNuevo);
-        Producto productoDb = productoRepository.findById(productoId)
-                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + productoId));
+        List<ProductoIdPrecio> listaPrecios = productoRepository.findIdAndPrecioByNombre(request.getNombreProducto());
 
-        // Si el precio es el mismo, solo sumas stock
-        if (precioNuevo.equals(productoDb.getPrecioCompra())) {
+
+        Long idProducto = listaPrecios.stream()
+                .filter(p -> Double.compare(p.getPrecioCompra(), request.getPrecioCompra()) == 0)
+                .map(ProductoIdPrecio::getId)
+                .findFirst()
+                .orElse(null);
+
+        if(idProducto != null) {
+            log.info("Registrando ingreso de producto {} cantidad {} precio {}", request.getNombreProducto(), request.getCantidad(), request.getPrecioCompra());
+
+            Producto productoDb = productoRepository.findById(idProducto)
+                    .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + idProducto));
+
             int stockActual = productoDb.getStock() != null ? productoDb.getStock() : 0;
-            productoDb.setStock(stockActual + cantidad);
-            Producto guardado = productoRepository.save(productoDb);
-            kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.ENTRADA);
-            return guardado;
+                productoDb.setStock(stockActual + request.getCantidad());
+                Producto guardado = productoRepository.save(productoDb);
+                kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
+                log.info("Actualizado stock de producto {} manteniendo precio. Nuevo stock {}", guardado.getId(), guardado.getStock());
+                return guardado;
+
         }
+
+        Producto productoDb = productoRepository.findFirstByNombreIgnoreCase(request.getNombreProducto())
+                .orElseThrow(() -> new EntityNotFoundException("Producto base no encontrado"));
+
 
         // Si el precio es distinto, creas un nuevo producto (misma lógica que tenías)
         Producto productoNuevoPrecio = new Producto(
                 productoDb.getNombre(),
-                precioNuevo,
+                request.getPrecioCompra(),
                 productoDb.getCantidadPorCajas(),
-                cantidad
+                request.getCantidad()
         );
 
         Producto guardado = productoRepository.save(productoNuevoPrecio);
-        kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.ENTRADA);
+        kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
+        log.info("Creado producto {} por nuevo precio {} con stock {}", guardado.getId(), request.getPrecioCompra(), request.getCantidad());
         return guardado;
     }
 
