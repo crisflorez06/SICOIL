@@ -5,6 +5,7 @@ import com.SICOIL.models.MovimientoTipo;
 import com.SICOIL.models.Producto;
 import com.SICOIL.repositories.ProductoIdPrecio;
 import com.SICOIL.repositories.ProductoRepository;
+import com.SICOIL.services.capital.CapitalService;
 import com.SICOIL.services.kardex.KardexService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class InventarioService {
 
     private final ProductoRepository productoRepository;
     private final KardexService kardexService;
+    private final CapitalService capitalService;
 
     public Producto registrarMovimiento(Long productoId, Integer cantidad, String observacion) {
         if (cantidad == null || cantidad <= 0) {
@@ -38,6 +40,14 @@ public class InventarioService {
 
         Producto guardado = productoRepository.save(producto);
         kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.ENTRADA);
+        if (producto.getPrecioCompra() != null && producto.getPrecioCompra() > 0) {
+            capitalService.registrarIngresoInventario(
+                    guardado,
+                    producto.getPrecioCompra(),
+                    cantidad,
+                    observacion
+            );
+        }
 
         return guardado;
     }
@@ -90,6 +100,12 @@ public class InventarioService {
                 productoDb.setStock(stockActual + request.getCantidad());
                 Producto guardado = productoRepository.save(productoDb);
                 kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
+                capitalService.registrarIngresoInventario(
+                        guardado,
+                        request.getPrecioCompra(),
+                        request.getCantidad(),
+                        "Ingreso inventario producto " + request.getNombreProducto()
+                );
                 log.info("Actualizado stock de producto {} manteniendo precio. Nuevo stock {}", guardado.getId(), guardado.getStock());
                 return guardado;
 
@@ -109,6 +125,12 @@ public class InventarioService {
 
         Producto guardado = productoRepository.save(productoNuevoPrecio);
         kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
+        capitalService.registrarIngresoInventario(
+                guardado,
+                request.getPrecioCompra(),
+                request.getCantidad(),
+                "Ingreso inventario nuevo precio " + productoDb.getNombre()
+        );
         log.info("Creado producto {} por nuevo precio {} con stock {}", guardado.getId(), request.getPrecioCompra(), request.getCantidad());
         return guardado;
     }
@@ -121,5 +143,14 @@ public class InventarioService {
         }
         log.info("Registrando movimiento de stock inicial para producto {} cantidad {}", producto.getId(), stockInicial);
         kardexService.registrarMovimiento(producto, stockInicial, observacion, MovimientoTipo.ENTRADA);
+        Double costoUnitario = producto.getPrecioCompra();
+        if (costoUnitario != null && costoUnitario > 0) {
+            capitalService.registrarIngresoInventario(
+                    producto,
+                    costoUnitario,
+                    stockInicial,
+                    observacion != null ? observacion : "Stock inicial producto " + producto.getNombre()
+            );
+        }
     }
 }

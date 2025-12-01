@@ -13,6 +13,7 @@ import com.SICOIL.repositories.DetalleVentaRepository;
 import com.SICOIL.mappers.venta.VentaMapper;
 import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.InventarioService;
+import com.SICOIL.services.capital.CapitalService;
 import com.SICOIL.services.cartera.CarteraService;
 import com.SICOIL.services.cliente.ClienteService;
 import com.SICOIL.services.producto.ProductoService;
@@ -43,6 +44,7 @@ public class VentaService {
     private final VentaMapper ventaMapper;
     private final InventarioService inventarioService;
     private final CarteraService carteraService;
+    private final CapitalService capitalService;
 
     public Page<VentaDetalleTablaResponse> traerTodos(Pageable pageable,
                                                       String nombreProducto,
@@ -85,6 +87,11 @@ public class VentaService {
         Venta guardada = ventaRepository.save(venta);
         log.info("Venta {} persistida, ajustando inventario", guardada.getId());
         ajustarInventarioPorVenta(guardada);
+        if (guardada.getTipoVenta() == TipoVenta.CONTADO) {
+            capitalService.registrarVentaContado(guardada);
+        } else {
+            capitalService.registrarVentaCredito(guardada);
+        }
         carteraService.registrarVentaEnCartera(guardada);
         log.info("Venta {} creada con {} detalles", guardada.getId(), guardada.getDetalles().size());
         return ventaMapper.entityToResponse(guardada);
@@ -115,6 +122,7 @@ public class VentaService {
 
         venta.setActiva(false);
         venta.setMotivoAnulacion(motivo.trim());
+        capitalService.revertirVenta(venta);
 
         carteraService.ajustarPorAnulacion(venta, usuarioActual, motivo);
 

@@ -32,6 +32,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.SICOIL.services.capital.CapitalService;
 import com.SICOIL.services.usuario.UsuarioService;
 
 @Service
@@ -45,6 +46,7 @@ public class CarteraService {
     private final CarteraMapper carteraMapper;
     private final CarteraMovimientoMapper carteraMovimientoMapper;
     private final UsuarioService usuarioService;
+    private final CapitalService capitalService;
 
     public void registrarVentaEnCartera(Venta venta) {
         if (venta == null) {
@@ -173,6 +175,7 @@ public class CarteraService {
                     observacionMovimiento
             );
             movimientosRegistrados.add(carteraMovimientoMapper.toAbonoResponse(movimiento));
+            capitalService.registrarAbonoCartera(cartera, aplicado, observacionMovimiento);
             restante -= aplicado;
         }
 
