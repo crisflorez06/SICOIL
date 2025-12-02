@@ -18,40 +18,10 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public List<Usuario> listarUsuarios() {
-        return usuarioRepository.findAll();
-    }
-
-    public Usuario obtenerPorId(Long id) {
-        return usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con id " + id));
-    }
-
-    public Usuario obtenerPorUsuario(String username) {
-        return usuarioRepository.findByUsuario(username)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado con username " + username));
-    }
-
     public Usuario crear(Usuario usuario) {
         String passwordEncriptado = passwordEncoder.encode(usuario.getContrasena());
         usuario.setContrasena(passwordEncriptado);
         return usuarioRepository.save(usuario);
-    }
-
-    public Usuario actualizar(Long id, Usuario datos) {
-        Usuario existente = obtenerPorId(id);
-        existente.setUsuario(datos.getUsuario());
-        if (datos.getContrasena() != null && !datos.getContrasena().isBlank()) {
-            existente.setContrasena(passwordEncoder.encode(datos.getContrasena()));
-        }
-        return usuarioRepository.save(existente);
-    }
-
-    public void eliminar(Long id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new EntityNotFoundException("Usuario no encontrado con id " + id);
-        }
-        usuarioRepository.deleteById(id);
     }
 
     public Usuario obtenerUsuarioActual() {

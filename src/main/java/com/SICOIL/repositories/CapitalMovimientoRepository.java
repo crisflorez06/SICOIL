@@ -16,26 +16,34 @@ public interface CapitalMovimientoRepository extends JpaRepository<CapitalMovimi
 
     List<CapitalMovimiento> findByCreadoEnBetween(LocalDateTime inicio, LocalDateTime fin);
 
-    @Query("select coalesce(sum(cm.montoReal), 0) from CapitalMovimiento cm")
+    @Query("select coalesce(sum(cm.monto), 0) from CapitalMovimiento cm where cm.esCredito = false")
     Double sumMontoReal();
 
-    @Query("select coalesce(sum(cm.montoReal), 0) from CapitalMovimiento cm where cm.montoReal > 0")
+    @Query("""
+            select coalesce(sum(cm.monto), 0)
+            from CapitalMovimiento cm
+            where cm.esCredito = false and cm.monto > 0
+            """)
     Double sumEntradas();
 
-    @Query("select coalesce(sum(cm.montoReal), 0) from CapitalMovimiento cm where cm.montoReal < 0")
+    @Query("""
+            select coalesce(sum(cm.monto), 0)
+            from CapitalMovimiento cm
+            where cm.esCredito = false and cm.monto < 0
+            """)
     Double sumSalidas();
 
     @Query("""
-            select coalesce(sum(cm.montoTotal), 0)
+            select coalesce(sum(cm.monto), 0)
             from CapitalMovimiento cm
             where cm.esCredito = true
             """)
     Double sumTotalCreditos();
 
     @Query("""
-            select coalesce(sum(cm.montoReal), 0)
+            select coalesce(sum(cm.monto), 0)
             from CapitalMovimiento cm
-            where cm.creadoEn between :inicio and :fin
+            where cm.esCredito = false and cm.creadoEn between :inicio and :fin
             """)
     Double sumMontoRealBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 }

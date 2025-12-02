@@ -3,6 +3,7 @@ package com.SICOIL.services.capital;
 import com.SICOIL.dtos.capital.CapitalMovimientoFiltro;
 import com.SICOIL.dtos.capital.CapitalMovimientoResponse;
 import com.SICOIL.dtos.capital.CapitalResumenResponse;
+import com.SICOIL.mappers.capital.CapitalMovimientoMapper;
 import com.SICOIL.models.CapitalMovimiento;
 import com.SICOIL.models.CapitalOrigen;
 import com.SICOIL.models.Cartera;
@@ -34,7 +35,34 @@ public class CapitalService {
     private final CapitalMovimientoRepository capitalMovimientoRepository;
     private final CarteraRepository carteraRepository;
     private final UsuarioService usuarioService;
+    private final CapitalMovimientoMapper capitalMovimientoMapper;
 
+
+    /**
+     * Registra en el módulo de capital el impacto financiero generado por un ingreso
+     * de inventario, ya sea por la creación de un nuevo producto o por la llegada de
+     * unidades adicionales.
+     * El registro se realiza como un movimiento de origen {@link CapitalOrigen#COMPRA},
+     * afectando la salida de capital en función del costo unitario y la cantidad ingresada.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que el producto sea válido y esté persistido.</li>
+     *   <li>Verificar que el costo unitario sea positivo y la cantidad mayor que cero.</li>
+     *   <li>Calcular el valor total de la operación (costo unitario × cantidad).</li>
+     *   <li>Omitir movimientos cuyo total sea cero, registrándolo únicamente en logs.</li>
+     *   <li>Construir la descripción del movimiento a partir de la referencia o de un mensaje predeterminado.</li>
+     *   <li>Registrar el movimiento de capital como una salida (valor negativo) utilizando
+     *       el usuario responsable del movimiento.</li>
+     * </ul>
+     *
+     * @param producto producto asociado al ingreso de inventario
+     * @param costoUnitario costo por unidad del producto ingresado
+     * @param cantidad cantidad de unidades ingresadas al inventario
+     * @param referencia descripción opcional del movimiento; si no se envía, se genera una por defecto
+     * @throws EntityNotFoundException si el producto es nulo o no está persistido
+     * @throws IllegalArgumentException si el costo unitario es negativo o la cantidad no es válida
+     */
     public void registrarIngresoInventario(Producto producto,
                                            double costoUnitario,
                                            int cantidad,
@@ -58,13 +86,28 @@ public class CapitalService {
                 CapitalOrigen.COMPRA,
                 producto.getId(),
                 -total,
-                -total,
                 false,
                 descripcion,
                 usuario
         );
     }
 
+    /**
+     * Registra en el módulo de capital el ingreso correspondiente a una venta de contado.
+     * El movimiento se almacena como un origen {@link CapitalOrigen#VENTA} y representa
+     * un aumento inmediato en el capital disponible.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que la venta sea válida y esté persistida.</li>
+     *   <li>Verificar que el tipo de venta sea {@link TipoVenta#CONTADO}.</li>
+     *   <li>Obtener el total de la venta.</li>
+     *   <li>Registrar el movimiento de capital como un ingreso directo.</li>
+     * </ul>
+     *
+     * @param venta la venta de contado cuyo ingreso se registrará en capital
+     * @throws IllegalArgumentException si la venta no es de tipo contado
+     */
     public void registrarVentaContado(Venta venta) {
         validarVenta(venta);
         if (venta.getTipoVenta() != TipoVenta.CONTADO) {
@@ -76,13 +119,29 @@ public class CapitalService {
                 CapitalOrigen.VENTA,
                 venta.getId(),
                 total,
-                total,
                 false,
                 "Venta contado #" + venta.getId(),
                 usuario
         );
     }
 
+    /**
+     * Registra en el módulo de capital el ingreso correspondiente a una venta a crédito.
+     * El movimiento se almacena como un origen {@link CapitalOrigen#VENTA} y se marca
+     * como diferido, ya que el pago no es inmediato, permitiendo un control contable
+     * diferenciado de los ingresos por crédito.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que la venta sea válida y esté persistida.</li>
+     *   <li>Verificar que el tipo de venta sea {@link TipoVenta#CREDITO}.</li>
+     *   <li>Obtener el total de la venta.</li>
+     *   <li>Registrar el movimiento como ingreso diferido en capital.</li>
+     * </ul>
+     *
+     * @param venta la venta a crédito cuyo ingreso diferido se registrará en capital
+     * @throws IllegalArgumentException si la venta no es de tipo crédito
+     */
     public void registrarVentaCredito(Venta venta) {
         validarVenta(venta);
         if (venta.getTipoVenta() != TipoVenta.CREDITO) {
@@ -94,13 +153,39 @@ public class CapitalService {
                 CapitalOrigen.VENTA,
                 venta.getId(),
                 total,
-                0d,
                 true,
                 "Venta crédito #" + venta.getId(),
                 usuario
         );
     }
 
+    /**
+     * Registra en el módulo de capital el ingreso correspondiente a un abono realizado
+     * sobre una cartera pendiente.
+     * El movimiento se almacena como un origen {@link CapitalOrigen#VENTA}, ya que el
+     * abono representa un pago parcial o total de una venta a crédito previamente registrada.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que la cartera exista y esté persistida.</li>
+     *   <li>Verificar que el monto del abono sea mayor que cero.</li>
+     *   <li>Determinar el identificador de referencia del movimiento:
+     *       <ul>
+     *         <li>Si la cartera está asociada a una venta → se usa el ID de la venta.</li>
+     *         <li>Si no → se usa el propio ID de la cartera.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Construir una descripción adecuada del movimiento (usando la observación enviada
+     *       o una generada automáticamente).</li>
+     *   <li>Registrar el movimiento en capital como un ingreso directo, asociado al usuario
+     *       que realizó la operación.</li>
+     * </ul>
+     *
+     * @param cartera la cartera a la que corresponde el abono
+     * @param monto monto del abono aplicado a la deuda
+     * @param descripcion texto descriptivo del movimiento; puede ser {@code null} o vacío
+     * @throws IllegalArgumentException si la cartera no es válida o si el monto es menor o igual a cero
+     */
     public void registrarAbonoCartera(Cartera cartera, double monto, String descripcion) {
         if (cartera == null || cartera.getId() == null) {
             throw new IllegalArgumentException("La cartera es obligatoria para registrar el abono.");
@@ -118,13 +203,32 @@ public class CapitalService {
                 CapitalOrigen.VENTA,
                 referenciaId,
                 monto,
-                monto,
                 false,
                 detalle,
                 usuario
         );
     }
 
+    /**
+     * Revierte el impacto financiero de una venta previamente registrada en el módulo
+     * de capital, generando un movimiento negativo que anula el ingreso original.
+     * El comportamiento varía según el tipo de venta (contado o crédito), manteniendo la
+     * coherencia entre ingresos inmediatos y diferidos.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que la venta sea válida y esté persistida.</li>
+     *   <li>Obtener el total de la venta y al usuario que realiza la reversión.</li>
+     *   <li>Registrar un movimiento negativo que anula el ingreso previo:
+     *     <ul>
+     *       <li>Si la venta fue de contado → reverso inmediato (no diferido).</li>
+     *       <li>Si la venta fue a crédito → reverso marcado como diferido.</li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
+     * @param venta venta cuyo movimiento financiero será revertido
+     */
     public void revertirVenta(Venta venta) {
         validarVenta(venta);
         double total = venta.getTotal();
@@ -133,7 +237,6 @@ public class CapitalService {
             registrarMovimiento(
                     CapitalOrigen.VENTA,
                     venta.getId(),
-                    -total,
                     -total,
                     false,
                     "Reverso venta contado #" + venta.getId(),
@@ -145,13 +248,32 @@ public class CapitalService {
                 CapitalOrigen.VENTA,
                 venta.getId(),
                 -total,
-                0d,
-                false,
+                true,
                 "Reverso venta crédito #" + venta.getId(),
                 usuario
         );
     }
 
+    /**
+     * Registra una inyección de capital en el sistema financiero, creando un movimiento
+     * positivo que incrementa directamente el capital disponible.
+     * Este tipo de operación no está asociada a una venta ni a un producto, por lo que
+     * no utiliza identificadores de referencia externos.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que el monto de la inyección sea mayor que cero.</li>
+     *   <li>Obtener el usuario que realiza la operación.</li>
+     *   <li>Construir una descripción adecuada a partir del texto recibido o una predeterminada.</li>
+     *   <li>Registrar el movimiento como un ingreso de origen {@link CapitalOrigen#INYECCION}.</li>
+     *   <li>Convertir el movimiento almacenado a {@link CapitalMovimientoResponse} mediante el mapper.</li>
+     * </ul>
+     *
+     * @param monto monto de capital que será inyectado al sistema
+     * @param descripcion texto descriptivo del movimiento; puede ser {@code null} o vacío
+     * @return un {@link CapitalMovimientoResponse} con la información del movimiento registrado
+     * @throws IllegalArgumentException si el monto es menor o igual a cero
+     */
     public CapitalMovimientoResponse registrarInyeccionCapital(double monto, String descripcion) {
         if (monto <= 0) {
             throw new IllegalArgumentException("El monto de la inyección debe ser mayor a cero.");
@@ -164,14 +286,22 @@ public class CapitalService {
                 CapitalOrigen.INYECCION,
                 null,
                 monto,
-                monto,
                 false,
                 detalle,
                 usuario
         );
-        return mapToResponse(movimiento);
+        return capitalMovimientoMapper.toResponse(movimiento);
     }
 
+    /**
+     * Obtiene una página de movimientos de capital aplicando filtros opcionales por origen, crédito,
+     * referencia, descripción y rango de fechas. Los movimientos resultantes se convierten en DTOs
+     * mediante {@link CapitalMovimientoMapper}.
+     *
+     * @param filtro   criterios a aplicar; puede ser {@code null} para traer todo
+     * @param pageable configuración de paginación y ordenamiento
+     * @return página de {@link CapitalMovimientoResponse} que cumplen con los filtros solicitados
+     */
     @Transactional(readOnly = true)
     public Page<CapitalMovimientoResponse> obtenerMovimientos(CapitalMovimientoFiltro filtro, Pageable pageable) {
         Specification<CapitalMovimiento> spec = CapitalMovimientoSpecification.conFiltros(
@@ -183,9 +313,19 @@ public class CapitalService {
                 filtro != null ? filtro.getHasta() : null
         );
         return capitalMovimientoRepository.findAll(spec, pageable)
-                .map(this::mapToResponse);
+                .map(capitalMovimientoMapper::toResponse);
     }
 
+    /**
+     * Consolida un resumen financiero con saldos, entradas, salidas, créditos pendientes y ganancias.
+     * Si se especifica un rango de fechas, el saldo real se recalcula considerando únicamente los
+     * movimientos líquidos dentro de ese intervalo; las otras métricas siempre se basan en el estado
+     * completo del sistema.
+     *
+     * @param desde fecha inicial (inclusive) para filtrar el saldo real; opcional
+     * @param hasta fecha final (inclusive) para filtrar el saldo real; opcional
+     * @return instancia de {@link CapitalResumenResponse} con los totales calculados
+     */
     @Transactional(readOnly = true)
     public CapitalResumenResponse obtenerResumen(LocalDate desde, LocalDate hasta) {
         double saldoReal = defaultValue(capitalMovimientoRepository.sumMontoReal());
@@ -194,6 +334,7 @@ public class CapitalService {
         double pendientes = carteraRepository.findAll().stream()
                 .mapToDouble(c -> c.getSaldo() != null ? c.getSaldo() : 0d)
                 .sum();
+        double ganancias = entradas - salidas;
 
         if (desde != null && hasta != null) {
             LocalDateTime inicio = desde.atStartOfDay();
@@ -208,46 +349,27 @@ public class CapitalService {
                 .totalCreditoPendiente(pendientes)
                 .totalCredito(pendientes)
                 .capitalNeto(saldoReal - pendientes)
+                .totalGanancias(ganancias)
                 .build();
     }
 
     private CapitalMovimiento registrarMovimiento(CapitalOrigen origen,
                                                   Long referenciaId,
-                                                  double montoTotal,
-                                                  double montoReal,
+                                                  double monto,
                                                   boolean esCredito,
                                                   String descripcion,
                                                   Usuario usuario) {
         CapitalMovimiento movimiento = CapitalMovimiento.builder()
                 .origen(origen)
                 .referenciaId(referenciaId)
-                .montoTotal(montoTotal)
-                .montoReal(montoReal)
+                .monto(monto)
                 .esCredito(esCredito)
                 .descripcion(descripcion)
                 .usuario(usuario)
                 .build();
-        log.info("Registrando movimiento de capital origen={} referencia={} total={} real={}",
-                origen, referenciaId, montoTotal, montoReal);
+        log.info("Registrando movimiento de capital origen={} referencia={} monto={} esCredito={}",
+                origen, referenciaId, monto, esCredito);
         return capitalMovimientoRepository.save(movimiento);
-    }
-
-    private CapitalMovimientoResponse mapToResponse(CapitalMovimiento movimiento) {
-        if (movimiento == null) {
-            return null;
-        }
-        return CapitalMovimientoResponse.builder()
-                .id(movimiento.getId())
-                .origen(movimiento.getOrigen())
-                .referenciaId(movimiento.getReferenciaId())
-                .montoTotal(movimiento.getMontoTotal())
-                .montoReal(movimiento.getMontoReal())
-                .esCredito(movimiento.getEsCredito())
-                .descripcion(movimiento.getDescripcion())
-                .creadoEn(movimiento.getCreadoEn())
-                .usuarioId(movimiento.getUsuario() != null ? movimiento.getUsuario().getId() : null)
-                .usuarioNombre(movimiento.getUsuario() != null ? movimiento.getUsuario().getUsuario() : null)
-                .build();
     }
 
     private Usuario obtenerUsuarioMovimiento() {

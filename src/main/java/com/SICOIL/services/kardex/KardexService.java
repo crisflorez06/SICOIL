@@ -26,6 +26,26 @@ public class KardexService {
     private final UsuarioService usuarioService;
     private final KardexMapper kardexMapper;
 
+    /**
+     * Recupera una lista paginada de movimientos registrados en el kardex,
+     * permitiendo la aplicación de varios filtros opcionales como producto,
+     * usuario responsable, tipo de movimiento y rango de fechas.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Construir dinámicamente una {@link Specification} a partir de los filtros recibidos.</li>
+     *   <li>Consultar la base de datos con paginación según el {@link Pageable} proporcionado.</li>
+     *   <li>Convertir cada resultado a {@link KardexResponse} mediante el mapper correspondiente.</li>
+     * </ul>
+     *
+     * @param pageable parámetros de paginación y ordenamiento
+     * @param productoId identificador del producto a filtrar; puede ser {@code null}
+     * @param usuarioId identificador del usuario que registró el movimiento; puede ser {@code null}
+     * @param tipo tipo de movimiento (ENTRADA, SALIDA); puede ser {@code null}
+     * @param desde fecha inicial del rango a consultar; puede ser {@code null}
+     * @param hasta fecha final del rango a consultar; puede ser {@code null}
+     * @return una página de {@link KardexResponse} con los movimientos encontrados según los filtros aplicados
+     */
     @Transactional(readOnly = true)
     public Page<KardexResponse> buscar(
             Pageable pageable,
@@ -43,6 +63,26 @@ public class KardexService {
                 .map(kardexMapper::entityToResponse);
     }
 
+    /**
+     * Registra un movimiento de inventario en el kardex asociado a un producto,
+     * especificando la cantidad, el tipo de movimiento y un comentario opcional.
+     * El usuario responsable del movimiento se obtiene automáticamente del
+     * contexto de autenticación.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Registrar en logs los datos del movimiento (producto, tipo y cantidad).</li>
+     *   <li>Construir una entidad {@link Kardex} con la información del producto,
+     *       usuario actual, cantidad, tipo de movimiento y comentario.</li>
+     *   <li>Persistir el movimiento en la base de datos.</li>
+     * </ul>
+     *
+     * @param producto producto sobre el que se realiza el movimiento
+     * @param cantidad cantidad de unidades afectadas por el movimiento
+     * @param comentario descripción o motivo del movimiento; puede ser {@code null}
+     * @param tipo tipo de movimiento registrado (ENTRADA o SALIDA)
+     * @return la entidad {@link Kardex} creada y almacenada en la base de datos
+     */
     public Kardex registrarMovimiento(Producto producto,
                                       Integer cantidad,
                                       String comentario,

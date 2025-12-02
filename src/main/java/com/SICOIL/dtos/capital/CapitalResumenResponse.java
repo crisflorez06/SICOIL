@@ -13,4 +13,5 @@ public class CapitalResumenResponse {
     private double totalCreditoPendiente;
     private double totalCredito;
     private double capitalNeto;
+    private double totalGanancias;
 }

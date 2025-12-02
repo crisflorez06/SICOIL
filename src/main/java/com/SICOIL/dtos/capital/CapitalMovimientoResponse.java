@@ -12,8 +12,7 @@ public class CapitalMovimientoResponse {
     private Long id;
     private CapitalOrigen origen;
     private Long referenciaId;
-    private Double montoTotal;
-    private Double montoReal;
+    private Double monto;
     private Boolean esCredito;
     private String descripcion;
     private LocalDateTime creadoEn;

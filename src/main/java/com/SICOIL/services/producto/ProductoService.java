@@ -27,12 +27,51 @@ public class ProductoService {
     private final InventarioService inventarioService;
 
 
+    /**
+     * Obtiene un producto por su identificador único.
+     * Este método se utiliza durante el proceso de registro de una venta para
+     * recuperar información del producto y reutilizarla en operaciones posteriores.
+     *
+     * @param id identificador del producto que se desea consultar
+     * @return la entidad {@link Producto} correspondiente al identificador proporcionado
+     * @throws EntityNotFoundException si no existe un producto con el identificador especificado
+     */
     @Transactional(readOnly = true)
     public Producto buscarPorId(Long id) {
         return productoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
     }
 
+
+    /**
+     * Obtiene una lista paginada de productos, permitiendo aplicar un filtro opcional por nombre.
+     * Los productos recuperados desde la base de datos se agrupan por nombre para construir una vista
+     * de dos niveles utilizada en el frontend:
+     *
+     * <p><b>1. Vista principal (nivel superior):</b><br>
+     *     Muestra información general del producto agrupado por nombre, incluyendo:
+     *     total de stock disponible, cantidad por cajas y el nombre del producto.
+     *
+     * <p><b>2. Vista desplegable (nivel inferior):</b><br>
+     *     Permite visualizar todas las variantes del producto que comparten el mismo nombre,
+     *     pero difieren en atributos como precio de compra y stock. Cada variante se muestra
+     *     individualmente para permitir operaciones específicas como seleccionar una variante
+     *     para ventas u otros procesos.
+     *
+     * <p>Además, el método realiza:
+     * <ul>
+     *   <li>Aplicación de un filtro dinámico mediante {@link Specification}.</li>
+     *   <li>Agrupación de productos por nombre.</li>
+     *   <li>Construcción de DTOs para la vista superior e inferior.</li>
+     *   <li>Paginación en memoria de los grupos resultantes.</li>
+     * </ul>
+     *
+     * @param nombreFiltro nombre parcial o completo del producto utilizado como filtro;
+     *                     puede ser {@code null} o vacío para obtener todos los registros
+     * @param page número de página solicitada (basado en 0)
+     * @param size cantidad de elementos por página
+     * @return una instancia de {@link PaginaProductoResponse} con los productos agrupados listos para ser mostrados en la vista
+     */
     @Transactional(readOnly = true)
     public PaginaProductoResponse traerTodos(
             String nombreFiltro,
@@ -113,7 +152,22 @@ public class ProductoService {
     }
 
 
-
+    /**
+     * Crea un nuevo producto en el sistema y registra su stock inicial mediante el servicio de inventario.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validación de que no exista otro producto con el mismo nombre (ignorando mayúsculas/minúsculas).</li>
+     *   <li>Conversión del {@link ProductoRequest} a entidad mediante el mapper correspondiente.</li>
+     *   <li>Persistencia del producto en la base de datos.</li>
+     *   <li>Registro del stock inicial si el producto fue creado con una cantidad mayor a cero,
+     *       delegando dicha operación al servicio de inventario.</li>
+     * </ul>
+     *
+     * @param productoRequest información necesaria para crear el producto
+     * @return un {@link ProductoResponse} que representa el producto creado
+     * @throws IllegalArgumentException si ya existe un producto con el mismo nombre
+     */
     public ProductoResponse crearProducto(ProductoRequest productoRequest) {
 
         log.info("Creando producto '{}'", productoRequest.getNombre());
@@ -134,6 +188,27 @@ public class ProductoService {
         return productoMapper.entitytoResponse(guardado);
     }
 
+    /**
+     * Actualiza un producto existente sin permitir modificaciones en su stock.
+     * Únicamente se permite la actualización de los demás campos definidos en el
+     * {@link ProductoRequest}.
+     *
+     * <p>El proceso incluye:
+     * <ul>
+     *   <li>Validar que el producto exista; de lo contrario, se lanza una excepción.</li>
+     *   <li>Evitar cambios en el campo de stock, ya que su modificación está
+     *       restringida únicamente al servicio de inventario.</li>
+     *   <li>Verificar que el nuevo nombre no esté siendo utilizado por otro producto distinto.</li>
+     *   <li>Actualizar los campos permitidos utilizando el mapper correspondiente.</li>
+     *   <li>Persistir los cambios en la base de datos.</li>
+     * </ul>
+     *
+     * @param id identificador del producto que se desea actualizar
+     * @param productoRequest datos que contienen los valores a actualizar del producto
+     * @return un {@link ProductoResponse} que representa el producto actualizado
+     * @throws EntityNotFoundException si no existe un producto con el identificador proporcionado
+     * @throws IllegalArgumentException si se intenta modificar el stock o si el nombre ya está en uso por otro producto
+     */
     public ProductoResponse actualizarProducto(Long id, ProductoRequest productoRequest) {
         log.info("Actualizando producto con id {}", id);
 
@@ -157,6 +232,22 @@ public class ProductoService {
         return productoMapper.entitytoResponse(guardado);
     }
 
+    /**
+     * Registra el ingreso de múltiples productos al inventario.
+     * Para cada elemento de la lista, se delega al servicio de inventario la lógica
+     * de ingreso, la cual determina si debe:
+     * <ul>
+     *   <li>Crear una nueva variante del producto cuando el precio de compra no coincide con
+     *       ninguna variante existente que comparta el mismo nombre.</li>
+     *   <li>Actualizar el stock de una variante existente cuando ya existe un producto con
+     *       el mismo nombre y el mismo precio.</li>
+     * </ul>
+     *
+     * <p>Cada producto procesado es convertido a un {@link ProductoResponse} para su retorno.</p>
+     *
+     * @param lista lista de solicitudes de ingreso representadas por {@link IngresoProductoRequest}
+     * @return lista de {@link ProductoResponse} que refleja las variantes creadas o actualizadas
+     */
     @Transactional
     public List<ProductoResponse> registrarIngresoProductos(List<IngresoProductoRequest> lista) {
 
@@ -171,6 +262,17 @@ public class ProductoService {
     }
 
 
+    /**
+     * Elimina una cantidad específica del stock de un producto existente y delega al
+     * servicio de inventario la actualización correspondiente.
+     * Este proceso ajusta el stock realizando una salida controlada y permite
+     * registrar una observación asociada a la operación para fines de trazabilidad.
+     *
+     * @param id identificador del producto al cual se le descontará stock
+     * @param cantidad cantidad de unidades que se desea eliminar del inventario
+     * @param observacion detalle o motivo de la eliminación del stock
+     * @return un {@link ProductoResponse} que representa el estado actualizado del producto
+     */
     public ProductoResponse eliminarCantidad(Long id, Integer cantidad, String observacion) {
         log.info("Eliminando stock del producto {} cantidad {}", id, cantidad);
         Producto actualizado = inventarioService.registrarSalida(id, cantidad, observacion);

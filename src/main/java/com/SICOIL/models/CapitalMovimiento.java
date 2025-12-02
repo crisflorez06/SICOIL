@@ -43,11 +43,7 @@ public class CapitalMovimiento {
 
     @NotNull
     @Column(name = "monto_total", nullable = false)
-    private Double montoTotal;
-
-    @NotNull
-    @Column(name = "monto_real", nullable = false)
-    private Double montoReal;
+    private Double monto;
 
     @NotNull
     @Column(name = "es_credito", nullable = false)

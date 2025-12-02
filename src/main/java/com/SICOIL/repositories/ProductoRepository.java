@@ -12,10 +12,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     Optional<Producto> findById(Long id);
 
-    //consulta para traer una lista de los nombres sin repetir para usar al momento de crear un registro, es solo informativo
-    @Query("SELECT DISTINCT p.nombre FROM Producto p")
-    List<String> findDistinctNombres();
-
     boolean existsByNombreIgnoreCase(String nombre);
 
     Optional<Producto> findByNombreIgnoreCase(String nombre);
