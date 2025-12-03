@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Anular venta</h2>
+<div mat-dialog-content>
+  <p>Ingresa el motivo de la anulación para continuar.</p>
+  <form [formGroup]="formulario">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Motivo</mat-label>
+      <textarea
+        matInput
+        rows="4"
+        formControlName="motivo"
+        placeholder="Ej.: Cliente solicitó la cancelación"
+      ></textarea>
+      <mat-hint align="end">{{ formulario.value.motivo?.length || 0 }}/255</mat-hint>
+      <mat-error *ngIf="formulario.get('motivo')?.hasError('required')">
+        El motivo es obligatorio.
+      </mat-error>
+      <mat-error *ngIf="formulario.get('motivo')?.hasError('maxlength')">
+        El motivo no puede superar los 255 caracteres.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-raised-button color="primary" type="button" (click)="confirmar()">Anular venta</button>
+</div>

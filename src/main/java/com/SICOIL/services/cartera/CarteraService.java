@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,8 @@ import com.SICOIL.services.usuario.UsuarioService;
 @Slf4j
 @Transactional
 public class CarteraService {
+
+    private static final String OBSERVACION_ELIMINACION_PREFIX = "El abono fue eliminado el ";
 
     private final CarteraRepository carteraRepository;
     private final CarteraMovimientoRepository carteraMovimientoRepository;
@@ -129,10 +132,27 @@ public class CarteraService {
      */
     @Transactional(readOnly = true)
     public List<CarteraAbonoDetalleResponse> listarAbonos(Long clienteId, LocalDate desde, LocalDate hasta) {
-        List<CarteraMovimiento> movimientos = obtenerMovimientos(clienteId, CarteraMovimientoTipo.ABONO, desde, hasta);
-        return movimientos.stream()
-                .map(carteraMovimientoMapper::toAbonoResponse)
-                .toList();
+        List<CarteraMovimiento> movimientos = obtenerMovimientos(
+                clienteId,
+                EnumSet.of(CarteraMovimientoTipo.ABONO, CarteraMovimientoTipo.AJUSTE),
+                desde,
+                hasta
+        );
+
+        List<CarteraAbonoDetalleResponse> respuestas = new ArrayList<>();
+        for (CarteraMovimiento movimiento : movimientos) {
+            if (movimiento.getTipo() == CarteraMovimientoTipo.ABONO) {
+                respuestas.add(carteraMovimientoMapper.toAbonoResponse(movimiento));
+                continue;
+            }
+            if (esAjusteEliminacionAbono(movimiento)) {
+                CarteraAbonoDetalleResponse eliminado = carteraMovimientoMapper.toAbonoResponse(movimiento);
+                Double montoOriginal = eliminado.getMonto();
+                eliminado.setMonto(-Math.abs(montoOriginal != null ? montoOriginal : 0d));
+                respuestas.add(eliminado);
+            }
+        }
+        return respuestas;
     }
 
     /**
@@ -155,7 +175,12 @@ public class CarteraService {
      */
     @Transactional(readOnly = true)
     public List<CarteraCreditoDetalleResponse> listarCreditos(Long clienteId, LocalDate desde, LocalDate hasta) {
-        List<CarteraMovimiento> movimientos = obtenerMovimientos(clienteId, CarteraMovimientoTipo.CREDITO, desde, hasta);
+        List<CarteraMovimiento> movimientos = obtenerMovimientos(
+                clienteId,
+                EnumSet.of(CarteraMovimientoTipo.CREDITO),
+                desde,
+                hasta
+        );
         return movimientos.stream()
                 .map(carteraMovimientoMapper::toCreditoResponse)
                 .toList();
@@ -351,13 +376,77 @@ public class CarteraService {
         return movimientosRegistrados;
     }
 
+    /**
+     * Elimina un abono previamente registrado, revirtiendo su impacto en la cartera
+     * y en el módulo de capital. Para mantener la trazabilidad del ajuste se crea un
+     * movimiento de tipo {@link CarteraMovimientoTipo#AJUSTE} con una observación
+     * detallada del motivo.
+     *
+     * @param clienteId identificador del cliente al que pertenece el abono
+     * @param movimientoId identificador del movimiento de abono que se desea eliminar
+     * @param request datos del abono, reutilizando {@link CarteraAbonoRequest} para obtener el monto y la observación
+     */
+    public void eliminarAbono(Long clienteId, Long movimientoId, CarteraAbonoRequest request) {
+        if (clienteId == null) {
+            throw new IllegalArgumentException("Debe indicar el cliente para eliminar el abono.");
+        }
+        if (movimientoId == null) {
+            throw new IllegalArgumentException("Debe indicar el movimiento del abono a eliminar.");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("La solicitud de eliminación del abono es obligatoria.");
+        }
+        Double montoSolicitado = request.getMonto();
+        if (montoSolicitado == null || montoSolicitado <= 0) {
+            throw new IllegalArgumentException("El monto de la eliminación debe ser mayor a cero.");
+        }
+
+        CarteraMovimiento movimiento = carteraMovimientoRepository.findById(movimientoId)
+                .orElseThrow(() -> new EntityNotFoundException("No existe un abono con ID: " + movimientoId));
+
+        if (movimiento.getTipo() != CarteraMovimientoTipo.ABONO) {
+            throw new IllegalArgumentException("El movimiento indicado no corresponde a un abono.");
+        }
+        Cartera cartera = movimiento.getCartera();
+        if (cartera == null
+                || cartera.getCliente() == null
+                || !Objects.equals(cartera.getCliente().getId(), clienteId)) {
+            throw new IllegalArgumentException("El abono no pertenece al cliente indicado.");
+        }
+
+        double montoMovimiento = movimiento.getMonto() != null ? movimiento.getMonto() : 0;
+        if (montoMovimiento <= 0) {
+            throw new IllegalStateException("El abono a eliminar tiene un monto inválido.");
+        }
+
+        if (Math.abs(montoMovimiento - montoSolicitado) > 0.01) {
+            throw new IllegalArgumentException("El monto enviado no coincide con el abono registrado.");
+        }
+
+        Usuario usuarioActual = usuarioService.obtenerUsuarioActual();
+        String observacionDetallada = construirObservacionEliminacionAbono(
+                request.getObservacion(),
+                usuarioActual
+        );
+
+        double saldoActual = cartera.getSaldo() != null ? cartera.getSaldo() : 0;
+        cartera.setSaldo(saldoActual + montoMovimiento);
+        carteraRepository.save(cartera);
+
+        carteraMovimientoRepository.delete(movimiento);
+
+        registrarMovimiento(cartera, CarteraMovimientoTipo.AJUSTE, montoMovimiento, usuarioActual, observacionDetallada);
+        capitalService.revertirAbonoCartera(cartera, montoMovimiento, observacionDetallada);
+        log.info("Abono {} eliminado para el cliente {} y cartera {}", movimientoId, clienteId, cartera.getId());
+    }
+
     private Map<Long, List<Cartera>> agruparPorCliente(List<Cartera> carteras) {
         return carteras.stream()
                 .collect(Collectors.groupingBy(c -> c.getCliente().getId()));
     }
 
     private List<CarteraMovimiento> obtenerMovimientos(Long clienteId,
-                                                       CarteraMovimientoTipo tipo,
+                                                       Set<CarteraMovimientoTipo> tipos,
                                                        LocalDate desde,
                                                        LocalDate hasta) {
         if (clienteId == null) {
@@ -366,7 +455,7 @@ public class CarteraService {
 
         Specification<CarteraMovimiento> spec = Specification
                 .where(CarteraMovimientoSpecification.clienteIdEquals(clienteId))
-                .and(CarteraMovimientoSpecification.tipoEquals(tipo))
+                .and(CarteraMovimientoSpecification.tipoIn(tipos))
                 .and(CarteraMovimientoSpecification.fechaBetween(desde, hasta));
 
         return carteraMovimientoRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "fecha"));
@@ -402,13 +491,34 @@ public class CarteraService {
         StringBuilder builder = new StringBuilder();
         if (observacionBase != null && !observacionBase.isBlank()) {
             builder.append(observacionBase.trim());
-        } else {
-            builder.append("Abono registrado manualmente");
         }
         if (cartera.getVenta() != null) {
-            builder.append(" - Venta ").append(cartera.getVenta().getId());
+            if (builder.length() > 0) {
+                builder.append(" - ");
+            }
+            builder.append("Venta ").append(cartera.getVenta().getId());
         }
-        return builder.toString();
+        return builder.length() > 0 ? builder.toString() : null;
+    }
+
+    private String construirObservacionEliminacionAbono(String observacionBase, Usuario usuario) {
+        StringBuilder builder = new StringBuilder(OBSERVACION_ELIMINACION_PREFIX)
+                .append(LocalDateTime.now());
+        if (usuario != null && usuario.getUsuario() != null) {
+            builder.append(" por el usuario ").append(usuario.getUsuario());
+        }
+        if (observacionBase != null && !observacionBase.isBlank()) {
+            builder.append(" por el siguiente motivo: ").append(observacionBase.trim());
+        }
+        return builder.append(".").toString();
+    }
+
+    private boolean esAjusteEliminacionAbono(CarteraMovimiento movimiento) {
+        if (movimiento.getTipo() != CarteraMovimientoTipo.AJUSTE) {
+            return false;
+        }
+        String observacion = movimiento.getObservacion();
+        return observacion != null && observacion.startsWith(OBSERVACION_ELIMINACION_PREFIX);
     }
 
     private Map<Long, TotalesMovimiento> calcularTotalesPorCliente(List<CarteraMovimiento> movimientos) {

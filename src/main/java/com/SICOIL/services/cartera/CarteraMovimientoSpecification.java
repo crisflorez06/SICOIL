@@ -40,6 +40,15 @@ public final class CarteraMovimientoSpecification {
         };
     }
 
+    public static Specification<CarteraMovimiento> tipoIn(Set<CarteraMovimientoTipo> tipos) {
+        return (root, query, cb) -> {
+            if (tipos == null || tipos.isEmpty()) {
+                return cb.conjunction();
+            }
+            return root.get("tipo").in(tipos);
+        };
+    }
+
     public static Specification<CarteraMovimiento> fechaBetween(LocalDate desde, LocalDate hasta) {
         return (root, query, cb) -> {
             if (desde == null && hasta == null) {

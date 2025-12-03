@@ -1,116 +1,57 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
-import { VentaPageResponse, VentaRequest, VentaResponse } from '../models/venta.model';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Page } from '../core/types/page';
-
-import { DetalleVentaResponse } from '../models/detalle-venta.model';
+import {
+  PaginaVentaResponse,
+  VentaAnulacionRequest,
+  VentaListadoFiltro,
+  VentaRequest,
+  VentaResponse,
+} from '../models/venta.model';
+import { VentaFiltrosResponse } from '../models/filtros.model';
 
 @Injectable({ providedIn: 'root' })
 export class VentaService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/ventas`;
+  private baseUrl = `${environment.apiUrl}/ventas`;
 
-  obtenerTodos(
-    page: number,
-    size: number,
-    filtros?: {
-      metodoPago?: string;
-      desde?: string;
-      hasta?: string;
-      minTotal?: number | null;
-      maxTotal?: number | null;
-    },
-    sort: string = 'fecha',
-    direction: 'asc' | 'desc' = 'asc'
-  ): Observable<VentaPageResponse> {
+  listar(filtros: VentaListadoFiltro = {}): Observable<PaginaVentaResponse> {
     let params = new HttpParams()
-      .set('page', page.toString())
-      .set('size', size.toString())
-      .set('sort', `${sort},${direction}`);
+      .set('page', (filtros.page ?? 0).toString())
+      .set('size', (filtros.size ?? 10).toString());
 
-    if (filtros) {
-      Object.entries(filtros).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
+    if (filtros.tipoVenta) {
+      params = params.set('tipoVenta', filtros.tipoVenta);
+    }
+    if (filtros.nombreCliente) {
+      params = params.set('nombreCliente', filtros.nombreCliente);
+    }
+    if (filtros.nombreUsuario) {
+      params = params.set('nombreUsuario', filtros.nombreUsuario);
+    }
+    if (typeof filtros.activa === 'boolean') {
+      params = params.set('activa', filtros.activa.toString());
+    }
+    if (filtros.desde) {
+      params = params.set('desde', filtros.desde);
+    }
+    if (filtros.hasta) {
+      params = params.set('hasta', filtros.hasta);
     }
 
-    return this.http.get<VentaPageResponse>(this.apiUrl, { params, observe: 'response' }).pipe(
-      map((response: HttpResponse<VentaPageResponse>) => {
-        if (response.status === 204 || !response.body) {
-          return {
-            ventas: {
-              content: [],
-              totalElements: 0,
-              totalPages: 0,
-              number: page,
-              size: size,
-            } as Page<VentaResponse>,
-            totalGeneral: 0,
-          };
-        }
-        return response.body as VentaPageResponse;
-      })
-    );
-  }
-  crearVenta(venta: VentaRequest): Observable<VentaResponse> {
-    return this.http.post<VentaResponse>(this.apiUrl, venta);
+    return this.http.get<PaginaVentaResponse>(this.baseUrl, { params });
   }
 
-  actualizarVenta(ventaId: number, venta: VentaRequest): Observable<VentaResponse> {
-    return this.http.put<VentaResponse>(`${this.apiUrl}/${ventaId}`, venta);
+  crear(request: VentaRequest): Observable<VentaResponse> {
+    return this.http.post<VentaResponse>(this.baseUrl, request);
   }
 
-  eliminarVenta(ventaId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${ventaId}`);
+  anular(ventaId: number, request: VentaAnulacionRequest): Observable<VentaResponse> {
+    return this.http.patch<VentaResponse>(`${this.baseUrl}/${ventaId}/anular`, request);
   }
 
-  obtenerDetallesPorVenta(ventaId: number): Observable<DetalleVentaResponse[]> {
-    return this.http.get<DetalleVentaResponse[]>(`${this.apiUrl}/${ventaId}/detalles`);
-  }
-
-  buscarProductos(
-    page: number,
-    size: number,
-    filtros?: {
-      nombreProducto?: string;
-      desde?: string;
-      hasta?: string;
-    },
-    sort: string = 'venta.fecha',
-    direction: 'asc' | 'desc' = 'desc'
-  ): Observable<Page<DetalleVentaResponse>> {
-    let params = new HttpParams()
-      .set('page', page.toString())
-      .set('size', size.toString())
-      .set('sort', `${sort},${direction}`);
-
-    if (filtros) {
-      Object.entries(filtros).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params = params.set(key, value.toString());
-        }
-      });
-    }
-
-    return this.http
-      .get<Page<DetalleVentaResponse>>(`${this.apiUrl}/detalles`, { params, observe: 'response' })
-      .pipe(
-        map((response: HttpResponse<Page<DetalleVentaResponse>>) => {
-          if (response.status === 204) {
-            return {
-              content: [],
-              totalElements: 0,
-              totalPages: 0,
-              number: page,
-              size: size,
-            } as Page<DetalleVentaResponse>;
-          }
-          return response.body as Page<DetalleVentaResponse>;
-        })
-      );
+  obtenerFiltrosRegistro(): Observable<VentaFiltrosResponse> {
+    return this.http.get<VentaFiltrosResponse>(`${environment.apiUrl}/filtros`);
   }
 }

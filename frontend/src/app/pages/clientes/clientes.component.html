@@ -1,0 +1,96 @@
+<section class="card border-0 shadow-sm p-4">
+  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div class="w-100">
+      <label for="input-busqueda-cliente" class="form-label fw-semibold mb-1">Buscar cliente</label>
+      <div class="input-group input-group-sm">
+        <input
+          type="text"
+          id="input-busqueda-cliente"
+          class="form-control"
+          placeholder="Nombre del cliente"
+          [(ngModel)]="terminoBusqueda"
+          (keyup.enter)="buscarClientes()"
+        />
+        <button type="button" class="btn btn-primary" (click)="buscarClientes()">
+          <i class="bi bi-search me-1"></i>
+          <span>Buscar</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="reiniciarBusqueda()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>
+          <span>Reiniciar</span>
+        </button>
+      </div>
+    </div>
+    <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+      <button
+        type="button"
+        class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-2"
+        (click)="registrarCliente()"
+        [disabled]="registrandoCliente"
+      >
+        <ng-container *ngIf="!registrandoCliente; else registrandoTpl">
+          <i class="bi bi-person-plus"></i>
+          <span>Nuevo cliente</span>
+        </ng-container>
+      </button>
+    </div>
+  </header>
+
+  <ng-template #registrandoTpl>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>Guardando...</span>
+  </ng-template>
+
+  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estado === 'cargando'">
+    <div class="spinner-border spinner-border-sm" role="status"></div>
+    <span class="fw-semibold mb-0">Cargando clientes...</span>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="estado === 'error'">
+    <span class="fw-semibold d-block mb-1">Ups...</span>
+    <span class="mb-0">No pudimos cargar los clientes. Intenta nuevamente.</span>
+  </div>
+
+  <div class="alert alert-secondary" *ngIf="estado === 'listo' && !hayClientes">
+    <span class="mb-0">No hay clientes registrados todavía.</span>
+  </div>
+
+  <div class="table-responsive" *ngIf="estado === 'listo' && hayClientes">
+    <table class="table table-striped table-hover align-middle mb-0">
+      <thead class="table-light text-uppercase text-muted small">
+        <tr>
+          <th>Cliente</th>
+          <th>Contacto</th>
+          <th>Dirección</th>
+          <th>Registrado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cliente of clientes">
+          <td>
+            <div class="fw-semibold">{{ cliente.nombre }}</div>
+            <div class="text-muted small">ID: {{ cliente.id }}</div>
+          </td>
+          <td>
+            <div class="fw-semibold" *ngIf="cliente.telefono; else sinTelefono">
+              {{ cliente.telefono }}
+            </div>
+            <ng-template #sinTelefono>
+              <span class="text-muted small">Sin teléfono</span>
+            </ng-template>
+          </td>
+          <td>
+            <div *ngIf="cliente.direccion; else sinDireccion">{{ cliente.direccion }}</div>
+            <ng-template #sinDireccion>
+              <span class="text-muted small">Sin dirección</span>
+            </ng-template>
+          </td>
+          <td>
+            <div>{{ cliente.fechaRegistro | date:'shortDate' }}</div>
+            <small class="text-muted">{{ cliente.fechaRegistro | date:'shortTime' }}</small>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

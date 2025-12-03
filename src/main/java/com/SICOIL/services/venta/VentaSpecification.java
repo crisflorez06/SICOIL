@@ -1,20 +1,73 @@
 package com.SICOIL.services.venta;
 
+import com.SICOIL.models.Cliente;
+import com.SICOIL.models.TipoVenta;
+import com.SICOIL.models.Usuario;
 import com.SICOIL.models.Venta;
-import java.math.BigDecimal;
+import jakarta.persistence.criteria.Join;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.domain.Specification;
 
-public class VentaSpecification {
+public final class VentaSpecification {
 
-    public static Specification<Venta> metodoPagoEquals(String metodoPago) {
-        return (root, q, cb) -> metodoPago == null || metodoPago.isBlank()
-                ? cb.conjunction()
-                : cb.equal(root.get("metodoPago"), metodoPago);
+    private VentaSpecification() {
     }
 
-    public static Specification<Venta> fechaBetween(LocalDateTime desde, LocalDateTime hasta) {
-        return (root, q, cb) -> {
+    public static Specification<Venta> conFiltros(TipoVenta tipoVenta,
+                                                  String nombreCliente,
+                                                  String nombreUsuario,
+                                                  Boolean activa,
+                                                  LocalDateTime desde,
+                                                  LocalDateTime hasta) {
+        return Specification.where(tipoVentaEquals(tipoVenta))
+                .and(clienteNombreContains(nombreCliente))
+                .and(usuarioNombreContains(nombreUsuario))
+                .and(ventaActivaEquals(activa))
+                .and(fechaBetween(desde, hasta));
+    }
+
+    private static Specification<Venta> tipoVentaEquals(TipoVenta tipoVenta) {
+        return (root, query, cb) -> {
+            if (tipoVenta == null) {
+                return cb.conjunction();
+            }
+            return cb.equal(root.get("tipoVenta"), tipoVenta);
+        };
+    }
+
+    private static Specification<Venta> clienteNombreContains(String nombreCliente) {
+        return (root, query, cb) -> {
+            if (nombreCliente == null || nombreCliente.isBlank()) {
+                return cb.conjunction();
+            }
+            Join<Venta, Cliente> clienteJoin = root.join("cliente");
+            return cb.like(cb.lower(clienteJoin.get("nombre")), "%" + nombreCliente.toLowerCase() + "%");
+        };
+    }
+
+    private static Specification<Venta> usuarioNombreContains(String nombreUsuario) {
+        return (root, query, cb) -> {
+            if (nombreUsuario == null || nombreUsuario.isBlank()) {
+                return cb.conjunction();
+            }
+            Join<Venta, Usuario> usuarioJoin = root.join("usuario");
+            return cb.like(cb.lower(usuarioJoin.get("usuario")), "%" + nombreUsuario.toLowerCase() + "%");
+        };
+    }
+
+    private static Specification<Venta> ventaActivaEquals(Boolean activa) {
+        return (root, query, cb) -> {
+            if (activa == null) {
+                return cb.isTrue(root.get("activa"));
+            }
+            return activa
+                    ? cb.isTrue(root.get("activa"))
+                    : cb.isFalse(root.get("activa"));
+        };
+    }
+
+    private static Specification<Venta> fechaBetween(LocalDateTime desde, LocalDateTime hasta) {
+        return (root, query, cb) -> {
             if (desde == null && hasta == null) {
                 return cb.conjunction();
             }
@@ -25,29 +78,5 @@ public class VentaSpecification {
                     ? cb.greaterThanOrEqualTo(root.get("fechaRegistro"), desde)
                     : cb.lessThanOrEqualTo(root.get("fechaRegistro"), hasta);
         };
-    }
-//
-//    public static Specification<Venta> totalMin(BigDecimal min) {
-//        return (root, q, cb) -> min == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("total"), min);
-//    }
-//
-//    public static Specification<Venta> totalMax(BigDecimal max) {
-//        return (root, q, cb) -> max == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("total"), max);
-//    }
-//
-//    public static Specification<Venta> totalMayorQueCero() {
-//        return (root, q, cb) -> cb.greaterThan(root.get("total"), BigDecimal.ZERO);
-//    }
-
-    public static Specification<Venta> usuarioEquals(Long usuarioId) {
-        return (root, q, cb) -> usuarioId == null
-                ? cb.conjunction()
-                : cb.equal(root.get("usuario").get("id"), usuarioId);
-    }
-
-    public static Specification<Venta> clienteEquals(Long clienteId) {
-        return (root, q, cb) -> clienteId == null
-                ? cb.conjunction()
-                : cb.equal(root.get("cliente").get("id"), clienteId);
     }
 }

@@ -1,16 +1,12 @@
 package com.SICOIL.services.venta;
 
-import static com.SICOIL.services.venta.DetalleVentaSpecification.clienteNombreContains;
-import static com.SICOIL.services.venta.DetalleVentaSpecification.productoNombreContains;
-import static com.SICOIL.services.venta.DetalleVentaSpecification.tipoVentaEquals;
-import static com.SICOIL.services.venta.DetalleVentaSpecification.ventaActivaEquals;
-import static com.SICOIL.services.venta.DetalleVentaSpecification.usuarioNombreContains;
-import static com.SICOIL.services.venta.DetalleVentaSpecification.ventaFechaBetween;
-
-import com.SICOIL.dtos.venta.*;
-import com.SICOIL.models.*;
-import com.SICOIL.repositories.DetalleVentaRepository;
+import com.SICOIL.dtos.venta.PaginaVentaResponse;
+import com.SICOIL.dtos.venta.VentaAnulacionRequest;
+import com.SICOIL.dtos.venta.VentaListadoResponse;
+import com.SICOIL.dtos.venta.VentaRequest;
+import com.SICOIL.dtos.venta.VentaResponse;
 import com.SICOIL.mappers.venta.VentaMapper;
+import com.SICOIL.models.*;
 import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.InventarioService;
 import com.SICOIL.services.capital.CapitalService;
@@ -20,9 +16,9 @@ import com.SICOIL.services.producto.ProductoService;
 import com.SICOIL.services.usuario.UsuarioService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -38,7 +34,6 @@ public class VentaService {
 
     private final VentaRepository ventaRepository;
     private final ProductoService productoService;
-    private final DetalleVentaRepository detalleVentaRepository;
     private final UsuarioService usuarioService;
     private final ClienteService clienteService;
     private final VentaMapper ventaMapper;
@@ -48,8 +43,7 @@ public class VentaService {
 
     /**
      * Recupera una lista paginada de ventas aplicando múltiples filtros opcionales,
-     * incluyendo producto, tipo de venta, cliente, usuario, estado (activa/anulada)
-     * y rango de fechas.
+     * agrupando sus detalles para facilitar el consumo en el frontend.
      *
      * <p><b>Comportamiento respecto a ventas anuladas:</b><br>
      * - Si {@code activa} es {@code true}, se devuelven únicamente ventas activas.<br>
@@ -60,13 +54,12 @@ public class VentaService {
      * <p>El proceso incluye:
      * <ul>
      *   <li>Conversión del tipo de venta proporcionado como cadena a {@link TipoVenta}.</li>
-     *   <li>Construcción dinámica de una {@link Specification} que combina todos los filtros solicitados.</li>
-     *   <li>Ejecución de la consulta paginada sobre el repositorio de detalles de venta.</li>
-     *   <li>Mapeo de cada resultado a {@link VentaDetalleTablaResponse} mediante el mapper.</li>
+     *   <li>Construcción dinámica de una {@link Specification} que combina los filtros solicitados.</li>
+     *   <li>Ejecución de la consulta paginada sobre el repositorio de ventas.</li>
+     *   <li>Mapeo de los resultados a {@link VentaListadoResponse}, incluyendo sus ítems.</li>
      * </ul>
      *
      * @param pageable datos de paginación (página, tamaño y ordenación)
-     * @param nombreProducto filtro opcional por nombre del producto (coincidencia parcial)
      * @param tipoVenta tipo de venta expresado como cadena; se convierte a {@link TipoVenta}
      * @param nombreCliente filtro opcional por nombre del cliente
      * @param nombreUsuario filtro opcional por nombre del usuario que registró la venta
@@ -78,31 +71,42 @@ public class VentaService {
      *               </ul>
      * @param desde fecha mínima del rango de consulta; puede ser {@code null}
      * @param hasta fecha máxima del rango de consulta; puede ser {@code null}
-     * @return una página de {@link VentaDetalleTablaResponse} con los resultados filtrados
+     * @return una instancia de {@link PaginaVentaResponse} con resultados agrupados
      */
-    public Page<VentaDetalleTablaResponse> traerTodos(Pageable pageable,
-                                                      String nombreProducto,
-                                                      String tipoVenta,
-                                                      String nombreCliente,
-                                                      String nombreUsuario,
-                                                      Boolean activa,
-                                                      LocalDateTime desde,
-                                                      LocalDateTime hasta) {
+    public PaginaVentaResponse traerTodos(Pageable pageable,
+                                          String tipoVenta,
+                                          String nombreCliente,
+                                          String nombreUsuario,
+                                          Boolean activa,
+                                          LocalDateTime desde,
+                                          LocalDateTime hasta) {
 
-        log.debug("Listando ventas filtros producto={}, tipoVenta={}, cliente={}, usuario={}, activa={}, desde={}, hasta={}",
-                nombreProducto, tipoVenta, nombreCliente, nombreUsuario, activa, desde, hasta);
+        log.debug("Listando ventas filtros tipoVenta={}, cliente={}, usuario={}, activa={}, desde={}, hasta={}",
+                tipoVenta, nombreCliente, nombreUsuario, activa, desde, hasta);
 
         TipoVenta filtroTipoVenta = parseTipoVenta(tipoVenta);
 
-        Specification<DetalleVenta> spec = Specification
-                .where(productoNombreContains(nombreProducto))
-                .and(tipoVentaEquals(filtroTipoVenta))
-                .and(ventaActivaEquals(activa))
-                .and(clienteNombreContains(nombreCliente))
-                .and(usuarioNombreContains(nombreUsuario))
-                .and(ventaFechaBetween(desde, hasta));
+        Specification<Venta> spec = VentaSpecification.conFiltros(
+                filtroTipoVenta,
+                nombreCliente,
+                nombreUsuario,
+                activa,
+                desde,
+                hasta
+        );
 
-        return detalleVentaRepository.findAll(spec, pageable).map(ventaMapper::toResponse);
+        var pagina = ventaRepository.findAll(spec, pageable);
+        List<VentaListadoResponse> contenido = pagina.stream()
+                .map(ventaMapper::toListado)
+                .toList();
+
+        PaginaVentaResponse response = new PaginaVentaResponse();
+        response.setContent(contenido);
+        response.setPage(pagina.getNumber());
+        response.setSize(pagina.getSize());
+        response.setTotalPages(pagina.getTotalPages());
+        response.setTotalElements(pagina.getTotalElements());
+        return response;
     }
 
 

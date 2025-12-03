@@ -210,6 +210,38 @@ public class CapitalService {
     }
 
     /**
+     * Registra un movimiento negativo en capital para revertir el impacto de un abono
+     * previamente aplicado a una cartera. Se utiliza principalmente cuando se elimina
+     * un abono erróneo y se requiere devolver el saldo pendiente y el flujo financiero.
+     *
+     * @param cartera cartera asociada al abono a revertir
+     * @param monto monto del abono que se está eliminando
+     * @param descripcion motivo detallado de la eliminación; puede ser {@code null}
+     */
+    public void revertirAbonoCartera(Cartera cartera, double monto, String descripcion) {
+        if (cartera == null || cartera.getId() == null) {
+            throw new IllegalArgumentException("La cartera es obligatoria para revertir el abono.");
+        }
+        if (monto <= 0) {
+            throw new IllegalArgumentException("El monto del abono a revertir debe ser mayor a cero.");
+        }
+        Venta venta = cartera.getVenta();
+        Long referenciaId = venta != null ? venta.getId() : cartera.getId();
+        String detalle = (descripcion != null && !descripcion.isBlank())
+                ? descripcion.trim()
+                : "Reverso abono cartera cliente " + cartera.getCliente().getNombre();
+        Usuario usuario = obtenerUsuarioMovimiento();
+        registrarMovimiento(
+                CapitalOrigen.VENTA,
+                referenciaId,
+                -monto,
+                false,
+                detalle,
+                usuario
+        );
+    }
+
+    /**
      * Revierte el impacto financiero de una venta previamente registrada en el módulo
      * de capital, generando un movimiento negativo que anula el ingreso original.
      * El comportamiento varía según el tipo de venta (contado o crédito), manteniendo la

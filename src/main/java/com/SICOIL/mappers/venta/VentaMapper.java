@@ -2,7 +2,8 @@ package com.SICOIL.mappers.venta;
 
 import com.SICOIL.dtos.venta.DetalleVentaRequest;
 import com.SICOIL.dtos.venta.DetalleVentaResponse;
-import com.SICOIL.dtos.venta.VentaDetalleTablaResponse;
+import com.SICOIL.dtos.venta.VentaItemResponse;
+import com.SICOIL.dtos.venta.VentaListadoResponse;
 import com.SICOIL.dtos.venta.VentaRequest;
 import com.SICOIL.dtos.venta.VentaResponse;
 import com.SICOIL.models.Cliente;
@@ -19,27 +20,27 @@ import java.util.function.Function;
 @Component
 public class VentaMapper {
 
-    public VentaDetalleTablaResponse toResponse(DetalleVenta detalle) {
-        if (detalle == null) {
+    public VentaListadoResponse toListado(Venta venta) {
+        if (venta == null) {
             return null;
         }
 
-        Producto producto = detalle.getProducto();
-        Venta venta = detalle.getVenta();
-        Usuario usuario = venta != null ? venta.getUsuario() : null;
+        List<VentaItemResponse> items = venta.getDetalles() == null
+                ? List.of()
+                : venta.getDetalles().stream()
+                .map(this::detalleToItem)
+                .toList();
 
-        return VentaDetalleTablaResponse.builder()
-                .detalleId(detalle.getId())
-                .productoNombre(producto != null ? producto.getNombre() : null)
-                .precioCompra(producto != null ? producto.getPrecioCompra() : null)
-                .cantidad(detalle.getCantidad())
-                .subtotal(detalle.getSubtotal())
-                .tipoVenta(venta != null ? venta.getTipoVenta() : null)
-                .activa(venta != null && venta.isActiva())
-                .motivoAnulacion(venta != null ? venta.getMotivoAnulacion() : null)
-                .clienteNombre(venta != null && venta.getCliente() != null ? venta.getCliente().getNombre() : null)
-                .usuarioNombre(usuario != null ? usuario.getUsuario() : null)
-                .fechaRegistro(venta != null ? venta.getFechaRegistro() : null)
+        return VentaListadoResponse.builder()
+                .ventaId(venta.getId())
+                .clienteNombre(venta.getCliente() != null ? venta.getCliente().getNombre() : null)
+                .totalVenta(venta.getTotal())
+                .tipoVenta(venta.getTipoVenta())
+                .activa(venta.isActiva())
+                .motivoAnulacion(venta.getMotivoAnulacion())
+                .usuarioNombre(venta.getUsuario() != null ? venta.getUsuario().getUsuario() : null)
+                .fechaRegistro(venta.getFechaRegistro())
+                .items(items)
                 .build();
     }
 
@@ -124,6 +125,16 @@ public class VentaMapper {
         response.setCantidad(detalle.getCantidad());
         response.setSubtotal(detalle.getSubtotal());
         return response;
+    }
+
+    private VentaItemResponse detalleToItem(DetalleVenta detalle) {
+        Producto producto = detalle.getProducto();
+        return VentaItemResponse.builder()
+                .productoNombre(producto != null ? producto.getNombre() : null)
+                .precioCompra(producto != null ? producto.getPrecioCompra() : null)
+                .cantidad(detalle.getCantidad())
+                .precioVenta(detalle.getSubtotal())
+                .build();
     }
 
 }

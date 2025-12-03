@@ -189,47 +189,52 @@ public class ProductoService {
     }
 
     /**
-     * Actualiza un producto existente sin permitir modificaciones en su stock.
-     * Únicamente se permite la actualización de los demás campos definidos en el
-     * {@link ProductoRequest}.
+     * Actualiza el nombre y la cantidad por cajas de todas las variantes que comparten el mismo
+     * nombre que el producto seleccionado. Esta operación permite mantener sincronizados los
+     * datos comunes de un grupo de productos sin alterar precios ni stock individuales.
      *
      * <p>El proceso incluye:
      * <ul>
-     *   <li>Validar que el producto exista; de lo contrario, se lanza una excepción.</li>
-     *   <li>Evitar cambios en el campo de stock, ya que su modificación está
-     *       restringida únicamente al servicio de inventario.</li>
-     *   <li>Verificar que el nuevo nombre no esté siendo utilizado por otro producto distinto.</li>
-     *   <li>Actualizar los campos permitidos utilizando el mapper correspondiente.</li>
-     *   <li>Persistir los cambios en la base de datos.</li>
+     *   <li>Validar que exista al menos una variante con el nombre recibido.</li>
+     *   <li>Verificar que el nuevo nombre no esté siendo utilizado por otro grupo distinto.</li>
+     *   <li>Buscar todas las variantes que comparten el mismo nombre original.</li>
+     *   <li>Actualizar en cada variante el nuevo nombre y la cantidad por cajas.</li>
+     *   <li>Persistir los cambios en lote y confirmar la operación.</li>
      * </ul>
      *
-     * @param id identificador del producto que se desea actualizar
-     * @param productoRequest datos que contienen los valores a actualizar del producto
-     * @return un {@link ProductoResponse} que representa el producto actualizado
-     * @throws EntityNotFoundException si no existe un producto con el identificador proporcionado
-     * @throws IllegalArgumentException si se intenta modificar el stock o si el nombre ya está en uso por otro producto
+     * @param nombreAnterior nombre actual que comparten las variantes a actualizar
+     * @param request datos con el nuevo nombre y la cantidad por cajas deseada
+     * @return {@code true} si al menos una variante fue actualizada
+     * @throws EntityNotFoundException si no existen productos con el nombre indicado
+     * @throws IllegalArgumentException si el nuevo nombre ya está asignado a otro grupo distinto
      */
-    public ProductoResponse actualizarProducto(Long id, ProductoRequest productoRequest) {
-        log.info("Actualizando producto con id {}", id);
-
-        Producto producto = productoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + id));
-
-        if (!Objects.equals(producto.getStock(), productoRequest.getStock())) {
-            log.warn("Intento de modificar stock desde actualizar producto para id {}", id);
-            throw new IllegalArgumentException("No está permitido cambiar el stock desde actualizar producto");
+    public boolean actualizarProducto(String nombreAnterior, ProductoActualizarRequest request) {
+        if (nombreAnterior == null || nombreAnterior.isBlank()) {
+            throw new IllegalArgumentException("El nombre anterior es obligatorio para actualizar el producto.");
         }
 
-        productoRepository.findByNombreIgnoreCase(productoRequest.getNombre())
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException("Ya existe un producto con el nombre: " + productoRequest.getNombre());
-                });
+        log.info("Actualizando grupo de productos con nombre '{}'", nombreAnterior);
 
-        productoMapper.updateEntityFromRequest(productoRequest, producto);
+        List<Producto> variantes = productoRepository.findAllByNombreIgnoreCase(nombreAnterior);
+        if (variantes.isEmpty()) {
+            throw new EntityNotFoundException("No se encontraron productos con nombre: " + nombreAnterior);
+        }
 
-        Producto guardado = productoRepository.save(producto);
-        return productoMapper.entitytoResponse(guardado);
+        String nombreActual = variantes.get(0).getNombre();
+        String nuevoNombre = request.getNombre().trim();
+
+        if (!nombreActual.equalsIgnoreCase(nuevoNombre)
+                && productoRepository.existsByNombreIgnoreCase(nuevoNombre)) {
+            throw new IllegalArgumentException("Ya existe un producto con el nombre: " + nuevoNombre);
+        }
+
+        for (Producto variante : variantes) {
+            variante.setNombre(nuevoNombre);
+            variante.setCantidadPorCajas(request.getCantidadPorCajas());
+        }
+
+        productoRepository.saveAll(variantes);
+        return true;
     }
 
     /**

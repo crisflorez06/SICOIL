@@ -1,0 +1,16 @@
+:host {
+  display: block;
+  max-width: 920px;
+}
+
+:host ::ng-deep .mat-mdc-dialog-content {
+  padding-inline: 0;
+}
+
+.bg-light-subtle {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+table {
+  width: 100%;
+}

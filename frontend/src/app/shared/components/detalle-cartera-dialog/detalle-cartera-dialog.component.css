@@ -1,0 +1,11 @@
+.detalle-panel {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.table th,
+.table td {
+  vertical-align: middle;
+}

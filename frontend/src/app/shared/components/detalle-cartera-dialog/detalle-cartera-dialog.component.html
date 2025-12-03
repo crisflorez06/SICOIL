@@ -1,0 +1,176 @@
+<h2 mat-dialog-title>
+  {{ data.tipo === 'abonos' ? 'Abonos del cliente' : 'Ventas a crédito del cliente' }}
+</h2>
+<div mat-dialog-content>
+  <div class="mb-3">
+    <p class="mb-1 fw-semibold">{{ data.cliente.clienteNombre }}</p>
+    <div class="text-muted small">Saldo pendiente: {{ data.cliente.saldoPendiente | currency:'COP':'symbol-narrow':'1.0-0' }}</div>
+  </div>
+
+  <ng-container [ngSwitch]="estado">
+    <div class="text-center py-4" *ngSwitchCase="'cargando'">
+      <span class="spinner-border" role="status" aria-hidden="true"></span>
+      <p class="text-muted mt-2 mb-0">Cargando movimientos...</p>
+    </div>
+
+    <div class="text-center py-4" *ngSwitchCase="'error'">
+      <p class="text-danger fw-semibold mb-3">No se pudo obtener el detalle del cliente.</p>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="recargar()">
+        Reintentar
+      </button>
+    </div>
+
+    <div *ngSwitchCase="'listo'">
+      <ng-container *ngIf="data.tipo === 'abonos'; else creditosTpl">
+        <div class="detalle-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+              <h6 class="text-uppercase text-muted small mb-0">
+                {{ mostrarEliminados ? 'Abonos eliminados' : 'Historial de abonos' }}
+              </h6>
+              <small class="text-muted" *ngIf="abonosEliminados.length && !mostrarEliminados">
+                {{ abonosEliminados.length }} abonos ajustados.
+              </small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                (click)="toggleEliminados()"
+                [disabled]="abonosEliminados.length === 0"
+              >
+                <i class="bi" [ngClass]="mostrarEliminados ? 'bi-arrow-left' : 'bi-eye'"></i>
+                <span class="ms-1">
+                  {{ mostrarEliminados ? 'Ver vigentes' : 'Ver eliminados' }}
+                </span>
+              </button>
+              <span class="badge text-bg-primary-subtle text-primary-emphasis">
+                {{ mostrarEliminados ? abonosEliminados.length : abonosActivos.length }}
+              </span>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!mostrarEliminados; else eliminadosTabla">
+            <ng-container *ngIf="abonosActivos.length; else sinAbonos">
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead class="table-light small text-uppercase">
+                    <tr>
+                      <th>Monto</th>
+                      <th>Fecha</th>
+                      <th>Registrado por</th>
+                      <th class="text-end">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let abono of abonosActivos">
+                      <td>{{ abono.monto | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                      <td>
+                        <div>{{ abono.fecha | date:'shortDate' }}</div>
+                        <small class="text-muted">{{ abono.fecha | date:'shortTime' }}</small>
+                      </td>
+                      <td>
+                        <div>{{ abono.usuarioNombre }}</div>
+                        <small class="text-muted" *ngIf="abono.observacion">Obs: {{ abono.observacion }}</small>
+                      </td>
+                      <td class="text-end">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger"
+                          (click)="eliminarAbono(abono)"
+                          [disabled]="estaEliminando(abono.movimientoId)"
+                        >
+                          <ng-container *ngIf="!estaEliminando(abono.movimientoId); else eliminandoTpl">
+                            <i class="bi bi-trash"></i>
+                            <span class="ms-1">Eliminar</span>
+                          </ng-container>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </ng-container>
+          </ng-container>
+        </div>
+      </ng-container>
+      <ng-template #creditosTpl>
+        <div class="detalle-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="text-uppercase text-muted small mb-0">Ventas a crédito</h6>
+            <span class="badge text-bg-warning-subtle text-warning-emphasis">{{ creditos.length }}</span>
+          </div>
+          <ng-container *ngIf="creditos.length; else sinCreditos">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light small text-uppercase">
+                  <tr>
+                    <th>Venta</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let credito of creditos">
+                    <td>
+                      <div>#{{ credito.ventaId }}</div>
+                      <small class="text-muted">{{ credito.usuarioNombre }}</small>
+                    </td>
+                    <td>{{ credito.monto | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+                    <td>
+                      <div>{{ credito.fecha | date:'shortDate' }}</div>
+                      <small class="text-muted">{{ credito.fecha | date:'shortTime' }}</small>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-container>
+        </div>
+      </ng-template>
+    </div>
+  </ng-container>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cerrar()">Cerrar</button>
+</div>
+<ng-template #eliminandoTpl>
+  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+  <span>Procesando...</span>
+</ng-template>
+<ng-template #eliminadosTabla>
+  <ng-container *ngIf="abonosEliminados.length; else sinEliminados">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead class="table-light small text-uppercase">
+          <tr>
+            <th>Monto original</th>
+            <th>Fecha de ajuste</th>
+            <th>Registrado por</th>
+            <th>Observación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let eliminado of abonosEliminados">
+            <td>{{ (-eliminado.monto) | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
+            <td>
+              <div>{{ eliminado.fecha | date:'shortDate' }}</div>
+              <small class="text-muted">{{ eliminado.fecha | date:'shortTime' }}</small>
+            </td>
+            <td>{{ eliminado.usuarioNombre }}</td>
+            <td>{{ eliminado.observacion || 'Sin observación' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</ng-template>
+<ng-template #sinAbonos>
+  <p class="text-muted mb-0">Aún no se registran abonos para este cliente.</p>
+</ng-template>
+<ng-template #sinCreditos>
+  <p class="text-muted mb-0">No se registran ventas a crédito para este cliente.</p>
+</ng-template>
+<ng-template #sinEliminados>
+  <p class="text-muted mb-0">No hay abonos eliminados para este cliente.</p>
+</ng-template>

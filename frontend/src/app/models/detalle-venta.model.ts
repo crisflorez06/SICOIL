@@ -1,15 +1,11 @@
-// src/app/models/detalle-venta.model.ts
 export interface DetalleVentaRequest {
   productoId: number;
   cantidad: number;
+  subtotal: number;
 }
 
 export interface DetalleVentaResponse {
-  id: number;
-  productoId: number;
-  productoNombre: string;
+  producto: string;
   cantidad: number;
-  precioUnitario: number;
   subtotal: number;
-  fecha:string;
 }

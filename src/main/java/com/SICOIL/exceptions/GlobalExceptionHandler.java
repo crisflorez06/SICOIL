@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +29,11 @@ public class GlobalExceptionHandler {
                 .map(error -> "Error en " + formatFieldName(error.getField()) + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         return buildResponseEntity(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        return buildResponseEntity(HttpStatus.UNAUTHORIZED, "Usuario o contraseña incorrectos.");
     }
 
     @ExceptionHandler(Exception.class)

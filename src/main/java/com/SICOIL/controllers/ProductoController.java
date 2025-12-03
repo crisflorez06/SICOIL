@@ -5,6 +5,7 @@ import com.SICOIL.dtos.invetario.entradaPrecioNuevoRequest;
 import com.SICOIL.dtos.invetario.salidaRequest;
 import com.SICOIL.dtos.producto.IngresoProductoRequest;
 import com.SICOIL.dtos.producto.PaginaProductoResponse;
+import com.SICOIL.dtos.producto.ProductoActualizarRequest;
 import com.SICOIL.dtos.producto.ProductoRequest;
 import com.SICOIL.dtos.producto.ProductoResponse;
 import com.SICOIL.services.producto.ProductoService;
@@ -45,13 +46,13 @@ public class ProductoController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductoResponse> actualizarProducto(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductoRequest productoRequest) {
+    @PutMapping("/{nombre}")
+    public ResponseEntity<Boolean> actualizarProducto(
+            @PathVariable String nombre,
+            @Valid @RequestBody ProductoActualizarRequest productoRequest) {
 
-        ProductoResponse response = productoService.actualizarProducto(id, productoRequest);
-        return ResponseEntity.ok(response);
+        boolean actualizado = productoService.actualizarProducto(nombre, productoRequest);
+        return ResponseEntity.ok(actualizado);
     }
 
 

@@ -1,0 +1,22 @@
+<h2 mat-dialog-title class="h5 mb-2">Registrar inyección de capital</h2>
+<div mat-dialog-content>
+  <form [formGroup]="formulario" class="d-flex flex-column gap-3">
+    <mat-form-field appearance="outline">
+      <mat-label>Monto</mat-label>
+      <input matInput type="number" min="0" step="0.01" placeholder="Ej. 150000" formControlName="monto" />
+      <mat-error *ngIf="formulario.get('monto')?.hasError('required')">Este campo es obligatorio.</mat-error>
+      <mat-error *ngIf="formulario.get('monto')?.hasError('min')">El monto debe ser mayor a 0.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Descripción</mat-label>
+      <textarea matInput rows="3" placeholder="Motivo de la inyección" formControlName="descripcion"></textarea>
+      <mat-hint>Opcional</mat-hint>
+      <mat-error *ngIf="formulario.get('descripcion')?.hasError('maxlength')">Máximo 250 caracteres.</mat-error>
+    </mat-form-field>
+  </form>
+</div>
+<div mat-dialog-actions class="d-flex justify-content-end gap-2 mt-3">
+  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="guardar()">Registrar</button>
+</div>

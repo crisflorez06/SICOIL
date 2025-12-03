@@ -1,31 +1,51 @@
-// Producto models
+export interface ProductoRequest {
+  nombre: string;
+  cantidadPorCajas: number;
+  precioCompra: number;
+  stock: number;
+}
+
 export interface ProductoResponse {
   id: number;
   nombre: string;
-  descripcion: string;
-  precioCompra: number; // BigDecimal in backend
-  precioVenta: number;  // BigDecimal in backend
-  stock: number;
-  categoria: string;
-  fechaRegistro: string; // ISO 8601
-  estado:boolean;
-}
-
-export interface ProductoRequest {
-  nombre: string;
-  descripcion: string;
   precioCompra: number;
-  precioVenta: number;
+  cantidadPorCajas: number;
   stock: number;
-  categoria: string;
 }
 
-export interface MovimientoEntradaProductoRequest {
-  productoId: number;
+export interface ProductoActualizarRequest {
+  nombre: string;
+  cantidadPorCajas: number;
+}
+
+export interface ProductosDesagrupadosResponse {
+  id: number;
+  precioCompra: number;
+  stock: number;
+}
+
+export interface ProductosAgrupadosResponse {
+  nombre: string;
+  stockTotal: number;
+  cantidadPorCajas: number;
+  variantes: ProductosDesagrupadosResponse[];
+}
+
+export interface PaginaProductoResponse {
+  content: ProductosAgrupadosResponse[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+}
+
+export interface IngresoProductoRequest {
+  nombreProducto: string;
+  precioCompra: number;
+  cantidad: number;
+}
+
+export interface InventarioSalidaRequest {
   cantidad: number;
   observacion?: string | null;
-}
-
-export interface MovimientoEntradaMasivaRequest {
-  movimientos: MovimientoEntradaProductoRequest[];
 }

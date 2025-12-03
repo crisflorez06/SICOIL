@@ -1,0 +1,31 @@
+<h2 mat-dialog-title>Registrar abono</h2>
+<div mat-dialog-content>
+  <p class="text-muted mb-3">Cliente: <strong>{{ data.clienteNombre }}</strong></p>
+  <form [formGroup]="formulario" class="d-flex flex-column gap-3">
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Monto</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="monto"
+        min="0"
+        step="1000"
+        placeholder="Valor del abono"
+      />
+      <mat-error *ngIf="formulario.get('monto')?.hasError('required')">El monto es obligatorio.</mat-error>
+      <mat-error *ngIf="formulario.get('monto')?.hasError('min')">Ingresa un monto mayor a cero.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="fill" class="full-width">
+      <mat-label>Observación (opcional)</mat-label>
+      <textarea matInput rows="3" formControlName="observacion" placeholder="Detalle del abono"></textarea>
+      <mat-hint align="end">{{ formulario.value.observacion?.length || 0 }}/255</mat-hint>
+      <mat-error *ngIf="formulario.get('observacion')?.hasError('maxlength')">
+        La observación no puede superar 255 caracteres.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-raised-button color="primary" type="button" (click)="confirmar()">Registrar</button>
+</div>

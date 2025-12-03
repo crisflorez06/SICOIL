@@ -1,6 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Observable } from 'rxjs';
+
+import { AuthService } from '../../../services/auth.service';
+import { LoginResponse } from '../../../models/auth.model';
+import { MensajeService } from '../../../services/mensaje.service';
 
 @Component({
   selector: 'app-header',
@@ -10,11 +15,38 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrls: ['./header.component.css'],
 })
 export class HeaderComponent {
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private mensajeService = inject(MensajeService);
+
   readonly links = [
     { path: '/productos', label: 'Productos' },
+    { path: '/clientes', label: 'Clientes' },
+    { path: '/capital', label: 'Capital' },
     { path: '/ventas', label: 'Ventas' },
-    { path: '/reportes', label: 'Reportes' },
+    { path: '/cartera', label: 'Cartera' },
   ];
 
   readonly today = new Date();
+  readonly usuario$: Observable<LoginResponse | null> = this.authService.usuario$;
+  cerrandoSesion = false;
+
+  cerrarSesion(): void {
+    if (this.cerrandoSesion) {
+      return;
+    }
+    this.cerrandoSesion = true;
+    this.authService.logout().subscribe({
+      next: () => {
+        this.mensajeService.success('Sesión finalizada.');
+        this.router.navigateByUrl('/login');
+      },
+      error: () => {
+        this.mensajeService.error('No se pudo cerrar sesión, intenta nuevamente.');
+      },
+      complete: () => {
+        this.cerrandoSesion = false;
+      },
+    });
+  }
 }

@@ -1,0 +1,64 @@
+<section class="login-wrapper">
+  <div class="login-card shadow">
+    <div class="mb-4 text-center">
+      <h1 class="h3 mb-1 text-primary fw-semibold">SICOIL Central</h1>
+      <p class="text-muted mb-0">Ingresa tus credenciales para continuar</p>
+    </div>
+
+    <form [formGroup]="formulario" (ngSubmit)="iniciarSesion()" novalidate>
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="usuario">Usuario</label>
+        <input
+          id="usuario"
+          type="text"
+          class="form-control"
+          placeholder="usuario@empresa.com"
+          formControlName="usuario"
+          [class.is-invalid]="mostrarError('usuario') || formulario.get('usuario')?.errors?.['backend']"
+          autocomplete="username"
+        />
+        <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.hasError('required')">
+          Ingresa tu usuario.
+        </div>
+        <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.errors?.['backend']">
+          {{ formulario.get('usuario')?.errors?.['backend'] }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="contrasena">Contraseña</label>
+        <input
+          id="contrasena"
+          type="password"
+          class="form-control"
+          placeholder="********"
+          formControlName="contrasena"
+          [class.is-invalid]="mostrarError('contrasena') || formulario.get('contrasena')?.errors?.['backend']"
+          autocomplete="current-password"
+        />
+        <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('required')">
+          Ingresa tu contraseña.
+        </div>
+        <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.errors?.['backend']">
+          {{ formulario.get('contrasena')?.errors?.['backend'] }}
+        </div>
+      </div>
+
+      <div
+        class="alert alert-danger py-2"
+        *ngIf="formulario.errors?.['backend']"
+        role="alert"
+      >
+        {{ formulario.errors?.['backend'] }}
+      </div>
+
+      <button class="btn btn-primary w-100" type="submit" [disabled]="enviando">
+        {{ enviando ? 'Ingresando...' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <div class="mt-4 text-center text-muted small">
+      ¿No recuerdas tus datos? Contacta al administrador del sistema.
+    </div>
+  </div>
+</section>

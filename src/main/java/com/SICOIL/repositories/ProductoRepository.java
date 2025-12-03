@@ -25,4 +25,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     Optional<Producto> findFirstByNombreIgnoreCase(String nombre);
 
+    List<Producto> findAllByNombreIgnoreCase(String nombre);
+
 }

@@ -1,7 +1,7 @@
 package com.SICOIL.controllers;
 
 import com.SICOIL.dtos.venta.VentaAnulacionRequest;
-import com.SICOIL.dtos.venta.VentaDetalleTablaResponse;
+import com.SICOIL.dtos.venta.PaginaVentaResponse;
 import com.SICOIL.dtos.venta.VentaRequest;
 import com.SICOIL.dtos.venta.VentaResponse;
 import com.SICOIL.services.venta.VentaService;
@@ -32,9 +32,8 @@ public class VentaController {
     private final VentaService ventaService;
 
     @GetMapping
-    public ResponseEntity<Page<VentaDetalleTablaResponse>> traerTodos(
+    public ResponseEntity<PaginaVentaResponse> traerTodos(
             @PageableDefault(size = 10) Pageable pageable,
-            @RequestParam(required = false) String nombreProducto,
             @RequestParam(required = false) String tipoVenta,
             @RequestParam(required = false) String nombreCliente,
             @RequestParam(required = false) String nombreUsuario,
@@ -46,9 +45,8 @@ public class VentaController {
         LocalDateTime desdeDateTime = desde != null ? desde.atStartOfDay() : null;
         LocalDateTime hastaDateTime = hasta != null ? hasta.atTime(23, 59, 59) : null;
 
-        Page<VentaDetalleTablaResponse> pagina = ventaService.traerTodos(
+        PaginaVentaResponse pagina = ventaService.traerTodos(
                 pageable,
-                nombreProducto,
                 tipoVenta,
                 nombreCliente,
                 nombreUsuario,

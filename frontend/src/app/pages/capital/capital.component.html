@@ -1,0 +1,231 @@
+<section class="card border-0 shadow-sm p-4">
+  <section class="mb-4">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <h6 class="text-uppercase text-muted mb-0 small">Resumen general</h6>
+      <div class="spinner-border spinner-border-sm" role="status" *ngIf="estadoResumen === 'cargando'"></div>
+      <span class="text-danger small" *ngIf="estadoResumen === 'error'">No se pudo cargar el resumen.</span>
+    </div>
+    <div class="row g-3" *ngIf="resumen && estadoResumen === 'listo'; else resumenVacio">
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Saldo real</span>
+          <p class="fs-4 fw-semibold text-primary mb-0">{{ resumen.saldoReal | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Capital neto</span>
+          <p class="fs-4 fw-semibold text-success mb-0">{{ resumen.capitalNeto | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Total ventas</span>
+          <p class="fs-4 fw-semibold text-success mb-0">{{ resumen.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Total compras</span>
+          <p class="fs-4 fw-semibold text-danger mb-0">{{ resumen.totalSalidas | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Ganancias</span>
+          <p class="fs-4 fw-semibold text-primary mb-0">{{ resumen.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="resumen-card border rounded p-3 h-100">
+          <span class="text-muted text-uppercase small">Crédito pendiente</span>
+          <p class="fs-5 fw-semibold mb-0">{{ resumen.totalCreditoPendiente | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+        </div>
+      </div>
+    </div>
+    <ng-template #resumenVacio>
+      <div class="alert alert-secondary mb-0" *ngIf="estadoResumen === 'listo'">
+        No hay información de resumen disponible para los filtros seleccionados.
+      </div>
+    </ng-template>
+  </section>
+
+  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div class="w-100">
+      <p class="form-label fw-semibold mb-2">Filtros de movimientos</p>
+      <div class="row g-2">
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-origen">Origen</label>
+          <select id="filtro-origen" class="form-select form-select-sm" [(ngModel)]="filtroOrigen">
+            <option value="">Todos</option>
+            <option value="VENTA">Venta</option>
+            <option value="COMPRA">Compra</option>
+            <option value="INYECCION">Inyección</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-credito">Tipo</label>
+          <select id="filtro-credito" class="form-select form-select-sm" [(ngModel)]="filtroCredito">
+            <option value="">Todos</option>
+            <option value="false">Contado</option>
+            <option value="true">Crédito</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-ref">Referencia</label>
+          <input
+            type="number"
+            id="filtro-ref"
+            class="form-control form-control-sm"
+            min="0"
+            placeholder="ID relacionado"
+            [(ngModel)]="filtroReferencia"
+          />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-desc">Descripción</label>
+          <input
+            type="text"
+            id="filtro-desc"
+            class="form-control form-control-sm"
+            placeholder="Texto incluido"
+            [(ngModel)]="filtroDescripcion"
+            (keyup.enter)="buscar()"
+          />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-desde">Desde</label>
+          <input type="date" id="filtro-desde" class="form-control form-control-sm" [(ngModel)]="filtroDesde" />
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-1" for="filtro-hasta">Hasta</label>
+          <input type="date" id="filtro-hasta" class="form-control form-control-sm" [(ngModel)]="filtroHasta" />
+        </div>
+      </div>
+        <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+        <button
+          type="button"
+          class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-2"
+          (click)="registrarInyeccion()"
+          [disabled]="registrandoInyeccion"
+        >
+          <ng-container *ngIf="!registrandoInyeccion; else registrandoInyeccionTpl">
+            <i class="bi bi-plus-circle"></i>
+            <span>Nueva inyección</span>
+          </ng-container>
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2"
+          (click)="buscar()"
+        >
+          <i class="bi bi-search"></i>
+          <span>Buscar</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2"
+          (click)="limpiarFiltros()"
+        >
+          <i class="bi bi-eraser"></i>
+          <span>Limpiar</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <ng-template #registrandoInyeccionTpl>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>Guardando...</span>
+  </ng-template>
+
+  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estadoMovimientos === 'cargando'">
+    <div class="spinner-border spinner-border-sm" role="status"></div>
+    <span class="fw-semibold mb-0">Cargando movimientos...</span>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="estadoMovimientos === 'error'">
+    <span class="fw-semibold d-block mb-1">Ups...</span>
+    <span class="mb-0">No pudimos cargar los movimientos. Intenta nuevamente.</span>
+  </div>
+
+  <div class="alert alert-secondary" *ngIf="estadoMovimientos === 'listo' && !hayMovimientos">
+    <span class="mb-0">No hay movimientos registrados con los filtros aplicados.</span>
+  </div>
+
+  <div class="table-responsive" *ngIf="estadoMovimientos === 'listo' && hayMovimientos">
+    <table class="table table-striped table-hover align-middle mb-0">
+      <thead class="table-light text-uppercase text-muted small">
+        <tr>
+          <th>Origen</th>
+          <th>Descripción</th>
+          <th class="text-end">Monto</th>
+          <th>Tipo</th>
+          <th>Registrado por</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let movimiento of movimientos">
+          <td>
+            <span class="badge text-bg-light text-uppercase">{{ origenLegible(movimiento.origen) }}</span>
+          </td>
+          <td>
+            <div class="fw-semibold mb-0">{{ movimiento.descripcion || 'Sin descripción' }}</div>
+          </td>
+          <td class="text-end">
+            <div class="fw-semibold" [ngClass]="montoClase(movimiento.origen)">
+              {{ movimiento.monto | currency:'COP':'symbol-narrow':'1.0-0' }}
+            </div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="movimiento.esCredito ? 'text-bg-warning' : 'text-bg-success'">
+              {{ movimiento.esCredito ? 'Crédito' : 'Contado' }}
+            </span>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ movimiento.usuarioNombre }}</div>
+            <div class="text-muted small">ID: {{ movimiento.usuarioId }}</div>
+          </td>
+          <td>
+            <div>{{ movimiento.creadoEn | date:'shortDate' }}</div>
+            <small class="text-muted">{{ movimiento.creadoEn | date:'shortTime' }}</small>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <nav
+    class="d-flex justify-content-end mt-3"
+    *ngIf="estadoMovimientos === 'listo' && mostrarPaginador"
+    aria-label="Paginación de movimientos"
+  >
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item" [class.disabled]="paginaActual === 0">
+        <button class="page-link" type="button" (click)="cambiarPagina(paginaActual - 1)" [disabled]="paginaActual === 0">
+          Anterior
+        </button>
+      </li>
+      <li
+        class="page-item"
+        *ngFor="let pagina of paginas"
+        [class.active]="pagina === paginaActual"
+      >
+        <button class="page-link" type="button" (click)="cambiarPagina(pagina)">
+          {{ pagina + 1 }}
+        </button>
+      </li>
+      <li class="page-item" [class.disabled]="paginaActual === totalPaginas - 1">
+        <button
+          class="page-link"
+          type="button"
+          (click)="cambiarPagina(paginaActual + 1)"
+          [disabled]="paginaActual === totalPaginas - 1"
+        >
+          Siguiente
+        </button>
+      </li>
+    </ul>
+  </nav>
+</section>

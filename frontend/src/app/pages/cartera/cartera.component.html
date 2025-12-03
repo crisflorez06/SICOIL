@@ -1,0 +1,149 @@
+<section class="card border-0 shadow-sm p-4">
+  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
+    <div class="w-100">
+      <p class="form-label fw-semibold mb-2">Filtros de cartera</p>
+      <div class="row g-2">
+        <div class="col-12 col-md-4">
+          <label class="form-label small mb-1" for="filtro-cliente">Cliente</label>
+          <input
+            type="text"
+            id="filtro-cliente"
+            class="form-control form-control-sm"
+            placeholder="Nombre del cliente"
+            [(ngModel)]="filtroCliente"
+            (keyup.enter)="buscarCartera()"
+          />
+        </div>
+        <div class="col-6 col-md-4">
+          <label class="form-label small mb-1" for="filtro-desde">Desde</label>
+          <input
+            type="date"
+            id="filtro-desde"
+            class="form-control form-control-sm"
+            [(ngModel)]="filtroDesde"
+          />
+        </div>
+        <div class="col-6 col-md-4">
+          <label class="form-label small mb-1" for="filtro-hasta">Hasta</label>
+          <input
+            type="date"
+            id="filtro-hasta"
+            class="form-control form-control-sm"
+            [(ngModel)]="filtroHasta"
+          />
+        </div>
+      </div>
+    </div>
+    <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+      <button
+        type="button"
+        class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2"
+        (click)="buscarCartera()"
+      >
+        <i class="bi bi-search"></i>
+        <span>Buscar</span>
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2"
+        (click)="limpiarFiltros()"
+      >
+        <i class="bi bi-eraser"></i>
+        <span>Limpiar</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estado === 'cargando'">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span class="fw-semibold mb-0">Cargando cartera...</span>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="estado === 'error'">
+    <span class="fw-semibold d-block mb-1">Ups...</span>
+    <span class="mb-0">No pudimos cargar la cartera. Intenta nuevamente.</span>
+  </div>
+
+  <div class="alert alert-secondary" *ngIf="estado === 'listo' && !hayClientesConSaldo">
+    <span class="mb-0">No hay clientes con saldo pendiente.</span>
+  </div>
+
+  <div class="table-responsive" *ngIf="estado === 'listo' && hayClientesConSaldo">
+    <table class="table table-striped table-hover align-middle mb-0">
+      <thead class="table-light text-uppercase text-muted small">
+        <tr>
+          <th>Cliente</th>
+          <th class="text-end">Saldo pendiente</th>
+          <th class="text-end">Total abonos</th>
+          <th class="text-end">Total créditos</th>
+          <th>Última actualización</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let cliente of cartera; let i = index">
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ cliente.clienteNombre }}</div>
+              <div class="text-muted small">ID: {{ cliente.clienteId }}</div>
+            </td>
+            <td class="text-end">
+              <span class="fw-semibold text-danger">{{ cliente.saldoPendiente | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end align-items-center gap-2">
+                <span>{{ cliente.totalAbonos | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0"
+                  (click)="verAbonos(cliente)"
+                  title="Ver abonos"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end align-items-center gap-2">
+                <span>{{ cliente.totalCreditos | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm p-0"
+                  (click)="verCreditos(cliente)"
+                  [disabled]="cliente.totalCreditos === 0"
+                  title="Ver créditos"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </td>
+            <td>
+              <div>{{ cliente.ultimaActualizacion | date:'shortDate' }}</div>
+              <small class="text-muted">{{ cliente.ultimaActualizacion | date:'shortTime' }}</small>
+            </td>
+            <td class="text-end">
+              <div class="d-flex align-items-center justify-content-end">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-success"
+                  (click)="registrarAbono(cliente)"
+                  [disabled]="estaRegistrandoAbono(cliente.clienteId)"
+                >
+                  <ng-container *ngIf="!estaRegistrandoAbono(cliente.clienteId); else registrandoAbonoTpl">
+                    <i class="bi bi-piggy-bank"></i>
+                    <span class="ms-1">Registrar abono</span>
+                  </ng-container>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<ng-template #registrandoAbonoTpl>
+  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+  <span>Guardando...</span>
+</ng-template>
