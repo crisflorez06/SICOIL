@@ -20,6 +20,27 @@ export interface CapitalResumenResponse {
   totalCredito: number;
   capitalNeto: number;
   totalGanancias: number;
+  totalAbonos: number;
+  totalUnidadesVendidas: number;
+  totalCajasVendidas: number;
+  topProductos: CapitalTopProducto[];
+  topClientes: CapitalTopCliente[];
+}
+
+export interface CapitalTopProducto {
+  productoId: number;
+  productoNombre: string;
+  cantidadVendida: number;
+  totalVendido: number;
+  participacionPorcentaje: number;
+}
+
+export interface CapitalTopCliente {
+  clienteId: number;
+  clienteNombre: string;
+  totalVentas: number;
+  montoComprado: number;
+  participacionPorcentaje: number;
 }
 
 export interface CapitalInyeccionRequest {

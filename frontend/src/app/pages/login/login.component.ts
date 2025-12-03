@@ -32,7 +32,7 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.estaAutenticado()) {
-      this.router.navigateByUrl('/productos');
+      this.router.navigateByUrl('/capital');
     }
   }
 
@@ -53,7 +53,7 @@ export class LoginComponent implements OnInit {
       .subscribe({
         next: () => {
           this.mensajeService.success('Bienvenido a SICOIL.');
-          this.router.navigateByUrl('/productos');
+          this.router.navigateByUrl('/capital');
         },
         error: (error) => {
           this.apiErrorService.handle(error, {

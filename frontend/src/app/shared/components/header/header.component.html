@@ -1,41 +1,55 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-  <div class="container-fluid align-items-center gap-3">
-    <a class="navbar-brand me-auto" routerLink="/">SICOIL Central</a>
+<nav class="app-header shadow">
+  <div class="header-inner">
+    <a class="brand" routerLink="/">
+      <span class="brand-mark">S</span>
+      <span class="brand-copy">
+        <span class="brand-title">SICOIL</span>
+        <span class="brand-subtitle">Operaciones y control</span>
+      </span>
+    </a>
 
     <ng-container *ngIf="usuario$ | async as usuario; else loginLink">
-      <ul class="navbar-nav me-4">
-        <li class="nav-item" *ngFor="let link of links">
-          <a
-            class="nav-link"
-            [routerLink]="link.path"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-          >
-            {{ link.label }}
-          </a>
-        </li>
-      </ul>
+      <div class="nav-content">
+        <ul class="nav-links">
+          <li *ngFor="let link of links">
+            <a
+              [routerLink]="link.path"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
 
-      <div class="d-flex align-items-center flex-wrap gap-3">
-        <span class="navbar-text text-white-50">
-          {{ today | date: 'mediumDate' }}
-        </span>
-        <span class="badge bg-secondary text-uppercase">{{ usuario.usuario }}</span>
-        <button
-          class="btn btn-outline-light btn-sm"
-          type="button"
-          (click)="cerrarSesion()"
-          [disabled]="cerrandoSesion"
-        >
-          {{ cerrandoSesion ? 'Cerrando...' : 'Cerrar sesión' }}
-        </button>
+        <div class="session-info">
+          <div class="date-chip">
+            <span>{{ today | date: 'mediumDate' }}</span>
+          </div>
+          <div class="user-pill">
+            <span class="dot"></span>
+            <span class="user-name">{{ usuario.usuario }}</span>
+          </div>
+          <button
+            class="btn-logout"
+            type="button"
+            (click)="cerrarSesion()"
+            [disabled]="cerrandoSesion"
+          >
+            {{ cerrandoSesion ? 'Cerrando...' : 'Cerrar sesión' }}
+          </button>
+        </div>
       </div>
     </ng-container>
 
     <ng-template #loginLink>
-      <div class="d-flex align-items-center gap-3">
-        <span class="navbar-text text-white-50">{{ today | date: 'mediumDate' }}</span>
-        <a class="btn btn-outline-light btn-sm" routerLink="/login">Iniciar sesión</a>
+      <div class="nav-content">
+        <div class="session-info">
+          <div class="date-chip">
+            <span>{{ today | date: 'mediumDate' }}</span>
+          </div>
+          <a class="btn-logout" routerLink="/login">Iniciar sesión</a>
+        </div>
       </div>
     </ng-template>
   </div>

@@ -6,7 +6,7 @@ export const routes: Routes = [
     path: 'login',
     loadComponent: () => import('./pages/login/login.component').then((m) => m.LoginComponent),
   },
-  { path: '', pathMatch: 'full', redirectTo: 'productos' },
+  { path: '', pathMatch: 'full', redirectTo: 'capital' },
   {
     path: 'productos',
     canActivate: [authGuard],
@@ -33,5 +33,5 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./pages/cartera/cartera.component').then((m) => m.CarteraComponent),
   },
-  { path: '**', redirectTo: 'productos' },
+  { path: '**', redirectTo: 'capital' },
 ];

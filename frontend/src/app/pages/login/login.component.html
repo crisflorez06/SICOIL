@@ -1,64 +1,104 @@
 <section class="login-wrapper">
-  <div class="login-card shadow">
-    <div class="mb-4 text-center">
-      <h1 class="h3 mb-1 text-primary fw-semibold">SICOIL Central</h1>
-      <p class="text-muted mb-0">Ingresa tus credenciales para continuar</p>
+  <div class="login-card shadow-lg">
+    <div class="brand-panel">
+      <div class="brand-chip">Sistema de control</div>
+      <h1>Bienvenido a <span>SICOIL</span></h1>
+      <p class="brand-text">
+        Centraliza tus operaciones, controla inventarios y mantén la rentabilidad en tiempo real.
+      </p>
+
+      <ul class="brand-highlights">
+        <li>
+          <span class="dot"></span>
+          Control integral de capital y cartera en una sola vista.
+        </li>
+        <li>
+          <span class="dot"></span>
+          Registro y seguimiento de ventas con detalle de productos.
+        </li>
+        <li>
+          <span class="dot"></span>
+          Informes descargables para clientes y movimientos diarios.
+        </li>
+      </ul>
+
     </div>
 
-    <form [formGroup]="formulario" (ngSubmit)="iniciarSesion()" novalidate>
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="usuario">Usuario</label>
-        <input
-          id="usuario"
-          type="text"
-          class="form-control"
-          placeholder="usuario@empresa.com"
-          formControlName="usuario"
-          [class.is-invalid]="mostrarError('usuario') || formulario.get('usuario')?.errors?.['backend']"
-          autocomplete="username"
-        />
-        <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.hasError('required')">
-          Ingresa tu usuario.
-        </div>
-        <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.errors?.['backend']">
-          {{ formulario.get('usuario')?.errors?.['backend'] }}
-        </div>
+    <div class="form-panel">
+      <div class="mb-4 text-center">
+        <h2 class="form-title">Ingresa tus credenciales</h2>
+        <p class="text-muted mb-0">Solo usuarios autorizados</p>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="contrasena">Contraseña</label>
-        <input
-          id="contrasena"
-          type="password"
-          class="form-control"
-          placeholder="********"
-          formControlName="contrasena"
-          [class.is-invalid]="mostrarError('contrasena') || formulario.get('contrasena')?.errors?.['backend']"
-          autocomplete="current-password"
-        />
-        <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('required')">
-          Ingresa tu contraseña.
+      <form [formGroup]="formulario" (ngSubmit)="iniciarSesion()" novalidate>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="usuario">Usuario</label>
+          <div class="input-wrapper">
+            <input
+              id="usuario"
+              type="text"
+              class="form-control"
+              placeholder="usuario@empresa.com"
+              formControlName="usuario"
+              [class.is-invalid]="mostrarError('usuario') || formulario.get('usuario')?.errors?.['backend']"
+              autocomplete="username"
+            />
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" />
+              </svg>
+            </span>
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.hasError('required')">
+            Ingresa tu usuario.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.errors?.['backend']">
+            {{ formulario.get('usuario')?.errors?.['backend'] }}
+          </div>
         </div>
-        <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.errors?.['backend']">
-          {{ formulario.get('contrasena')?.errors?.['backend'] }}
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="contrasena">Contraseña</label>
+          <div class="input-wrapper">
+            <input
+              id="contrasena"
+              type="password"
+              class="form-control"
+              placeholder="********"
+              formControlName="contrasena"
+              [class.is-invalid]="mostrarError('contrasena') || formulario.get('contrasena')?.errors?.['backend']"
+              autocomplete="current-password"
+            />
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M12 3l7 3v6.5c0 4.2-2.6 8-7 8s-7-3.8-7-8V6z" />
+                <circle cx="12" cy="11.5" r="1.7" />
+                <path d="M12 13.5v2.5" />
+              </svg>
+            </span>
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('required')">
+            Ingresa tu contraseña.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.errors?.['backend']">
+            {{ formulario.get('contrasena')?.errors?.['backend'] }}
+          </div>
         </div>
-      </div>
 
-      <div
-        class="alert alert-danger py-2"
-        *ngIf="formulario.errors?.['backend']"
-        role="alert"
-      >
-        {{ formulario.errors?.['backend'] }}
-      </div>
+        <div
+          class="alert alert-danger py-2"
+          *ngIf="formulario.errors?.['backend']"
+          role="alert"
+        >
+          {{ formulario.errors?.['backend'] }}
+        </div>
 
-      <button class="btn btn-primary w-100" type="submit" [disabled]="enviando">
-        {{ enviando ? 'Ingresando...' : 'Iniciar sesión' }}
-      </button>
-    </form>
+        <button class="btn btn-gradient w-100" type="submit" [disabled]="enviando">
+          {{ enviando ? 'Ingresando...' : 'Iniciar sesión' }}
+        </button>
+      </form>
 
-    <div class="mt-4 text-center text-muted small">
-      ¿No recuerdas tus datos? Contacta al administrador del sistema.
     </div>
   </div>
 </section>

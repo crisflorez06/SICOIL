@@ -2,6 +2,121 @@
   background-color: #f8f9fa;
 }
 
+.resumen-card--highlight {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+}
+
 .resumen-card p {
   line-height: 1.2;
+}
+
+.gauge {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #edf0f4;
+  position: relative;
+}
+
+@media (max-width: 575.98px) {
+  .gauge {
+    width: 140px;
+    height: 140px;
+  }
+}
+
+.gauge__inner {
+  width: 65%;
+  height: 65%;
+  border-radius: 50%;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.gauge__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.resumen-fechas > div {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .resumen-fechas > div {
+    width: auto;
+  }
+}
+
+.chart-card {
+  background-color: #fff;
+}
+
+.chart-bar {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-bar__track {
+  background-color: #edf0f4;
+  border-radius: 999px;
+  height: 0.75rem;
+  overflow: hidden;
+}
+
+.chart-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.chart-bar:last-child {
+  margin-bottom: 0;
+}
+
+.top-product {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.top-product:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.top-product-bar {
+  height: 0.5rem;
+  background-color: #edf0f4;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.top-product-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffc107, #ff9800);
+  border-radius: inherit;
+  transition: width 0.3s ease-in-out;
+}
+
+.top-client__fill {
+  background: linear-gradient(90deg, #0d6efd, #6610f2);
+}
+
+.chart-card .chart-bar {
+  min-height: 66px;
 }

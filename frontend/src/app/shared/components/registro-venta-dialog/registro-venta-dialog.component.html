@@ -26,17 +26,30 @@
           <div class="col-12 col-md-6">
             <mat-form-field appearance="outline" class="w-100">
               <mat-label>Cliente</mat-label>
-              <mat-select formControlName="clienteId" placeholder="Selecciona un cliente">
-                <mat-option *ngFor="let cliente of clientesDisponibles" [value]="cliente.id">
+              <input
+                matInput
+                type="text"
+                placeholder="Selecciona un cliente"
+                formControlName="clienteNombre"
+                [matAutocomplete]="clienteAuto"
+                autocomplete="off"
+              />
+              <mat-error *ngIf="formulario.get('clienteNombre')?.hasError('required')">
+                Debes ingresar el nombre del cliente.
+              </mat-error>
+              <mat-error *ngIf="clienteNombreInvalido">Selecciona un cliente existente.</mat-error>
+              <mat-autocomplete
+                #clienteAuto="matAutocomplete"
+                autoActiveFirstOption
+                (optionSelected)="seleccionarCliente($event.option.value)"
+              >
+                <mat-option *ngFor="let cliente of clientesFiltrados" [value]="cliente.nombre">
                   {{ cliente.nombre }}
                 </mat-option>
-                <mat-option *ngIf="clientesDisponibles.length === 0" disabled>
-                  No hay clientes registrados.
+                <mat-option *ngIf="clientesFiltrados.length === 0" disabled>
+                  Sin coincidencias
                 </mat-option>
-              </mat-select>
-              <mat-error *ngIf="formulario.get('clienteId')?.hasError('required')">
-                Debes seleccionar un cliente válido.
-              </mat-error>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
         </div>
@@ -55,17 +68,30 @@
             <div class="d-flex flex-column gap-3">
               <mat-form-field appearance="outline" class="w-100">
                 <mat-label>Producto</mat-label>
-                <mat-select formControlName="productoNombre" (selectionChange)="cambioProducto()">
-                  <mat-option *ngFor="let producto of productosDisponibles" [value]="producto.nombreProducto">
-                    {{ producto.nombreProducto }}
-                  </mat-option>
-                  <mat-option *ngIf="productosDisponibles.length === 0" disabled>
-                    No hay productos disponibles.
-                  </mat-option>
-                </mat-select>
+                <input
+                  matInput
+                  type="text"
+                  formControlName="productoNombre"
+                  [matAutocomplete]="productoAuto"
+                  autocomplete="off"
+                  [disabled]="productosDisponibles.length === 0"
+                />
                 <mat-error *ngIf="itemForm.get('productoNombre')?.hasError('required')">
                   Selecciona un producto.
                 </mat-error>
+                <mat-error *ngIf="productoNombreInvalido">Selecciona un producto existente.</mat-error>
+                <mat-autocomplete
+                  #productoAuto="matAutocomplete"
+                  autoActiveFirstOption
+                  (optionSelected)="seleccionarProducto($event.option.value)"
+                >
+                  <mat-option *ngFor="let producto of productosFiltrados" [value]="producto.nombreProducto">
+                    {{ producto.nombreProducto }}
+                  </mat-option>
+                  <mat-option *ngIf="productosFiltrados.length === 0" disabled>
+                    Sin coincidencias
+                  </mat-option>
+                </mat-autocomplete>
               </mat-form-field>
               <mat-form-field appearance="outline" class="w-100 mb-0">
                 <mat-label>Precio de venta</mat-label>
@@ -95,7 +121,7 @@
                     *ngIf="itemForm.get('productoNombre')?.value && preciosDisponibles.length === 0"
                     disabled
                   >
-                    Este producto no tiene precios registrados.
+                    Este producto no tiene stock disponible.
                   </mat-option>
                 </ng-container>
               </mat-select>

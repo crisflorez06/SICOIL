@@ -20,9 +20,9 @@ export class HeaderComponent {
   private mensajeService = inject(MensajeService);
 
   readonly links = [
+    { path: '/capital', label: 'Dashboard' },
     { path: '/productos', label: 'Productos' },
     { path: '/clientes', label: 'Clientes' },
-    { path: '/capital', label: 'Capital' },
     { path: '/ventas', label: 'Ventas' },
     { path: '/cartera', label: 'Cartera' },
   ];

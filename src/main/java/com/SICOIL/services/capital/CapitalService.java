@@ -1,7 +1,9 @@
 package com.SICOIL.services.capital;
 
 import com.SICOIL.dtos.capital.CapitalMovimientoFiltro;
+import com.SICOIL.dtos.capital.CapitalClienteResumen;
 import com.SICOIL.dtos.capital.CapitalMovimientoResponse;
+import com.SICOIL.dtos.capital.CapitalProductoResumen;
 import com.SICOIL.dtos.capital.CapitalResumenResponse;
 import com.SICOIL.mappers.capital.CapitalMovimientoMapper;
 import com.SICOIL.models.CapitalMovimiento;
@@ -13,6 +15,8 @@ import com.SICOIL.models.Usuario;
 import com.SICOIL.models.Venta;
 import com.SICOIL.repositories.CapitalMovimientoRepository;
 import com.SICOIL.repositories.CarteraRepository;
+import com.SICOIL.repositories.CarteraMovimientoRepository;
+import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.usuario.UsuarioService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
@@ -21,6 +25,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -34,6 +39,8 @@ public class CapitalService {
 
     private final CapitalMovimientoRepository capitalMovimientoRepository;
     private final CarteraRepository carteraRepository;
+    private final CarteraMovimientoRepository carteraMovimientoRepository;
+    private final VentaRepository ventaRepository;
     private final UsuarioService usuarioService;
     private final CapitalMovimientoMapper capitalMovimientoMapper;
 
@@ -360,29 +367,95 @@ public class CapitalService {
      */
     @Transactional(readOnly = true)
     public CapitalResumenResponse obtenerResumen(LocalDate desde, LocalDate hasta) {
-        double saldoReal = defaultValue(capitalMovimientoRepository.sumMontoReal());
-        double entradas = defaultValue(capitalMovimientoRepository.sumEntradas());
-        double salidas = Math.abs(defaultValue(capitalMovimientoRepository.sumSalidas()));
+        LocalDateTime inicio = desde != null ? desde.atStartOfDay() : null;
+        LocalDateTime fin = hasta != null ? hasta.atTime(23, 59, 59) : null;
+        boolean filtrarPorRango = inicio != null || fin != null;
+
+        double saldoReal = filtrarPorRango
+                ? defaultValue(capitalMovimientoRepository.sumMontoRealBetween(inicio, fin))
+                : defaultValue(capitalMovimientoRepository.sumMontoReal());
+        double entradas = filtrarPorRango
+                ? defaultValue(capitalMovimientoRepository.sumEntradasBetween(inicio, fin))
+                : defaultValue(capitalMovimientoRepository.sumEntradas());
+        double salidas = Math.abs(filtrarPorRango
+                ? defaultValue(capitalMovimientoRepository.sumSalidasBetween(inicio, fin))
+                : defaultValue(capitalMovimientoRepository.sumSalidas()));
         double pendientes = carteraRepository.findAll().stream()
                 .mapToDouble(c -> c.getSaldo() != null ? c.getSaldo() : 0d)
                 .sum();
         double ganancias = entradas - salidas;
-
-        if (desde != null && hasta != null) {
-            LocalDateTime inicio = desde.atStartOfDay();
-            LocalDateTime fin = hasta.atTime(23, 59, 59);
-            saldoReal = defaultValue(capitalMovimientoRepository.sumMontoRealBetween(inicio, fin));
-        }
+        double totalAbonos = defaultValue(carteraMovimientoRepository.sumAbonosBetween(inicio, fin));
+        double totalCreditosOtorgados = defaultValue(carteraMovimientoRepository.sumCreditosBetween(inicio, fin));
+        double totalUnidadesVendidas = defaultValue(ventaRepository.sumCantidadVendida(inicio, fin));
+        double totalCajasVendidas = defaultValue(ventaRepository.sumCajasVendidas(inicio, fin));
+        double totalVentasPeriodo = defaultValue(ventaRepository.sumTotalVentas(inicio, fin));
+        List<CapitalProductoResumen> topProductos = construirTopProductos(inicio, fin, totalUnidadesVendidas);
+        List<CapitalClienteResumen> topClientes = construirTopClientes(inicio, fin, totalVentasPeriodo);
 
         return CapitalResumenResponse.builder()
                 .saldoReal(saldoReal)
                 .totalEntradas(entradas)
                 .totalSalidas(salidas)
                 .totalCreditoPendiente(pendientes)
-                .totalCredito(pendientes)
+                .totalCredito(totalCreditosOtorgados)
                 .capitalNeto(saldoReal - pendientes)
                 .totalGanancias(ganancias)
+                .totalAbonos(totalAbonos)
+                .totalUnidadesVendidas(totalUnidadesVendidas)
+                .totalCajasVendidas(totalCajasVendidas)
+                .topProductos(topProductos)
+                .topClientes(topClientes)
                 .build();
+    }
+
+    private List<CapitalProductoResumen> construirTopProductos(LocalDateTime inicio,
+                                                               LocalDateTime fin,
+                                                               double totalUnidadesVendidas) {
+        Pageable limite = PageRequest.of(0, 5);
+        List<Object[]> resultados = ventaRepository.findTopSellingProducts(inicio, fin, limite);
+        return resultados.stream()
+                .map(registro -> {
+                    Long productoId = registro[0] != null ? (Long) registro[0] : null;
+                    String nombre = registro[1] != null ? registro[1].toString() : "Producto";
+                    long cantidad = registro[2] instanceof Number ? ((Number) registro[2]).longValue() : 0L;
+                    double total = registro[3] instanceof Number ? ((Number) registro[3]).doubleValue() : 0d;
+                    double participacion = totalUnidadesVendidas > 0
+                            ? (cantidad / totalUnidadesVendidas) * 100
+                            : 0;
+                    return CapitalProductoResumen.builder()
+                            .productoId(productoId)
+                            .productoNombre(nombre)
+                            .cantidadVendida(cantidad)
+                            .totalVendido(total)
+                            .participacionPorcentaje(participacion)
+                            .build();
+                })
+                .toList();
+    }
+
+    private List<CapitalClienteResumen> construirTopClientes(LocalDateTime inicio,
+                                                             LocalDateTime fin,
+                                                             double totalVentasPeriodo) {
+        Pageable limite = PageRequest.of(0, 5);
+        List<Object[]> resultados = ventaRepository.findTopClients(inicio, fin, limite);
+        return resultados.stream()
+                .map(registro -> {
+                    Long clienteId = registro[0] != null ? (Long) registro[0] : null;
+                    String nombre = registro[1] != null ? registro[1].toString() : "Cliente";
+                    long cantidadVentas = registro[2] instanceof Number ? ((Number) registro[2]).longValue() : 0L;
+                    double monto = registro[3] instanceof Number ? ((Number) registro[3]).doubleValue() : 0d;
+                    double participacion = totalVentasPeriodo > 0
+                            ? (monto / totalVentasPeriodo) * 100
+                            : 0;
+                    return CapitalClienteResumen.builder()
+                            .clienteId(clienteId)
+                            .clienteNombre(nombre)
+                            .totalVentas(cantidadVentas)
+                            .montoComprado(monto)
+                            .participacionPorcentaje(participacion)
+                            .build();
+                })
+                .toList();
     }
 
     private CapitalMovimiento registrarMovimiento(CapitalOrigen origen,
@@ -422,7 +495,7 @@ public class CapitalService {
         }
     }
 
-    private double defaultValue(Double valor) {
-        return valor != null ? valor : 0d;
+    private double defaultValue(Number valor) {
+        return valor != null ? valor.doubleValue() : 0d;
     }
 }

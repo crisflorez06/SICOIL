@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { VentaRequest } from '../../../models/venta.model';
 import { VentaService } from '../../../services/venta.service';
 import {
@@ -15,6 +16,8 @@ import {
   FiltroProductoResponse,
 } from '../../../models/filtros.model';
 import { MensajeService } from '../../../services/mensaje.service';
+import { Subject } from 'rxjs';
+import { debounceTime, startWith, takeUntil } from 'rxjs/operators';
 
 type ItemVentaRegistrado = {
   productoNombre: string;
@@ -37,24 +40,29 @@ type ItemVentaRegistrado = {
     MatInputModule,
     MatButtonToggleModule,
     MatSelectModule,
+    MatAutocompleteModule,
   ],
   templateUrl: './registro-venta-dialog.component.html',
   styleUrls: ['./registro-venta-dialog.component.css'],
 })
-
-export class RegistroVentaDialogComponent implements OnInit {
+export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<RegistroVentaDialogComponent>);
   private ventaService = inject(VentaService);
   private mensajeService = inject(MensajeService);
+  private destroy$ = new Subject<void>();
 
   clientesDisponibles: FiltroClienteResponse[] = [];
   productosDisponibles: FiltroProductoResponse[] = [];
+  clientesFiltrados: FiltroClienteResponse[] = [];
+  productosFiltrados: FiltroProductoResponse[] = [];
   cargandoFiltros = true;
   errorFiltros = false;
+  clienteNombreInvalido = false;
+  productoNombreInvalido = false;
 
   readonly formulario = this.fb.group({
-    clienteId: [null as number | null, Validators.required],
+    clienteNombre: ['', Validators.required],
     tipoVenta: ['CONTADO' as 'CONTADO' | 'CREDITO', Validators.required],
   });
 
@@ -68,7 +76,13 @@ export class RegistroVentaDialogComponent implements OnInit {
   itemsRegistrados: ItemVentaRegistrado[] = [];
 
   ngOnInit(): void {
+    this.configurarAutocompletados();
     this.cargarFiltros();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get totalCalculado(): number {
@@ -86,12 +100,22 @@ export class RegistroVentaDialogComponent implements OnInit {
       return;
     }
     const raw = this.itemForm.getRawValue();
-    if (!raw || !raw.productoNombre || raw.precioId == null || raw.precioVenta == null) {
+    if (!raw || raw.productoNombre == null || raw.precioId == null || raw.precioVenta == null) {
+      return;
+    }
+
+    const productoSeleccionado = this.buscarProductoPorNombre(raw.productoNombre);
+    if (!productoSeleccionado) {
+      this.productoNombreInvalido = true;
+      this.itemForm.get('productoNombre')?.setErrors({ optionInvalida: true });
+      this.mensajeService.error('Debes seleccionar un producto válido.');
       return;
     }
 
     const precioSeleccionado = this.buscarPrecio(raw.productoNombre, raw.precioId);
     if (!precioSeleccionado) {
+      this.itemForm.get('precioId')?.setErrors({ required: true });
+      this.mensajeService.error('Debes seleccionar un precio disponible.');
       return;
     }
 
@@ -160,11 +184,11 @@ export class RegistroVentaDialogComponent implements OnInit {
   }
 
   preciosPorProducto(nombreProducto: string | null): FiltroProductoPrecio[] {
-    if (!nombreProducto) {
-      return [];
-    }
-    const producto = this.productosDisponibles.find((p) => p.nombreProducto === nombreProducto);
-    return producto?.precios ?? [];
+    return (
+      this.buscarProductoPorNombre(nombreProducto)?.precios.filter(
+        (precio) => Number(precio.cantidad ?? 0) > 0,
+      ) ?? []
+    );
   }
 
   cancelar(): void {
@@ -180,8 +204,11 @@ export class RegistroVentaDialogComponent implements OnInit {
       return;
     }
     const raw = this.formulario.getRawValue();
-    if (!raw.clienteId) {
-      this.formulario.get('clienteId')?.setErrors({ required: true });
+    const nombreCliente = (raw.clienteNombre ?? '').trim();
+    const clienteSeleccionado = this.buscarClientePorNombre(nombreCliente);
+    if (!clienteSeleccionado) {
+      this.formulario.get('clienteNombre')?.setErrors({ optionInvalida: true });
+      this.clienteNombreInvalido = true;
       return;
     }
     const items = this.itemsRegistrados.map((item) => ({
@@ -191,7 +218,7 @@ export class RegistroVentaDialogComponent implements OnInit {
     }));
 
     const resultado: VentaRequest = {
-      clienteId: raw.clienteId,
+      clienteId: clienteSeleccionado.id,
       tipoVenta: raw.tipoVenta ?? 'CONTADO',
       items,
     };
@@ -210,6 +237,12 @@ export class RegistroVentaDialogComponent implements OnInit {
       next: (respuesta) => {
         this.clientesDisponibles = respuesta.clientes ?? [];
         this.productosDisponibles = respuesta.productos ?? [];
+        this.clientesFiltrados = this.filtrarClientes(
+          (this.formulario.get('clienteNombre')?.value as string | null) ?? '',
+        );
+        this.productosFiltrados = this.filtrarProductos(
+          (this.itemForm.get('productoNombre')?.value as string | null) ?? '',
+        );
         this.cargandoFiltros = false;
       },
       error: () => {
@@ -223,9 +256,99 @@ export class RegistroVentaDialogComponent implements OnInit {
     if (!nombreProducto || precioId == null) {
       return undefined;
     }
-    return this.productosDisponibles
-      .find((producto) => producto.nombreProducto === nombreProducto)
-      ?.precios.find((precio) => precio.id === precioId);
+    const producto = this.buscarProductoPorNombre(nombreProducto);
+    return producto?.precios.find((precio) => precio.id === precioId);
   }
 
+  private configurarAutocompletados(): void {
+    const clienteControl = this.formulario.get('clienteNombre');
+    if (clienteControl) {
+      clienteControl.valueChanges
+        .pipe(
+          startWith(clienteControl.value ?? ''),
+          debounceTime(200),
+          takeUntil(this.destroy$),
+        )
+        .subscribe((valor) => {
+          const termino = typeof valor === 'string' ? valor : '';
+          this.clientesFiltrados = this.filtrarClientes(termino);
+          this.clienteNombreInvalido = false;
+        });
+    }
+
+    const productoControl = this.itemForm.get('productoNombre');
+    if (productoControl) {
+      productoControl.valueChanges
+        .pipe(
+          startWith(productoControl.value ?? ''),
+          debounceTime(200),
+          takeUntil(this.destroy$),
+        )
+        .subscribe((valor) => {
+          const termino = typeof valor === 'string' ? valor : '';
+          this.productosFiltrados = this.filtrarProductos(termino);
+          this.productoNombreInvalido = false;
+          this.cambioProducto();
+        });
+    }
+  }
+
+  seleccionarCliente(nombreCliente: string): void {
+    const cliente = this.buscarClientePorNombre(nombreCliente);
+    if (!cliente) {
+      this.clienteNombreInvalido = true;
+      this.formulario.get('clienteNombre')?.setErrors({ optionInvalida: true });
+      return;
+    }
+    this.clienteNombreInvalido = false;
+  }
+
+  seleccionarProducto(nombreProducto: string): void {
+    const producto = this.buscarProductoPorNombre(nombreProducto);
+    if (!producto) {
+      this.productoNombreInvalido = true;
+      this.itemForm.get('productoNombre')?.setErrors({ optionInvalida: true });
+      return;
+    }
+    this.productoNombreInvalido = false;
+    this.cambioProducto();
+  }
+
+  private filtrarClientes(termino: string): FiltroClienteResponse[] {
+    if (!termino) {
+      return this.clientesDisponibles.slice(0, 15);
+    }
+    const terminoNormalizado = termino.toLocaleLowerCase();
+    return this.clientesDisponibles
+      .filter((cliente) => cliente.nombre.toLocaleLowerCase().includes(terminoNormalizado))
+      .slice(0, 15);
+  }
+
+  private filtrarProductos(termino: string): FiltroProductoResponse[] {
+    if (!termino) {
+      return this.productosDisponibles.slice(0, 15);
+    }
+    const terminoNormalizado = termino.toLocaleLowerCase();
+    return this.productosDisponibles
+      .filter((producto) => producto.nombreProducto.toLocaleLowerCase().includes(terminoNormalizado))
+      .slice(0, 15);
+  }
+
+  private buscarClientePorNombre(nombre: string | null): FiltroClienteResponse | undefined {
+    if (!nombre) {
+      return undefined;
+    }
+    const termino = nombre.trim().toLocaleLowerCase();
+    return this.clientesDisponibles.find((cliente) => cliente.nombre.toLocaleLowerCase() === termino);
+  }
+
+  private buscarProductoPorNombre(nombreProducto: string | null): FiltroProductoResponse | undefined {
+    if (!nombreProducto) {
+      return undefined;
+    }
+    const termino = nombreProducto.trim().toLocaleLowerCase();
+    return this.productosDisponibles.find(
+      (producto) => producto.nombreProducto.toLocaleLowerCase() === termino,
+    );
+  }
 }

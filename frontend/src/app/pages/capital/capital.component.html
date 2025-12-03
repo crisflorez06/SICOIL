@@ -1,45 +1,285 @@
 <section class="card border-0 shadow-sm p-4">
   <section class="mb-4">
-    <div class="d-flex align-items-center gap-2 mb-2">
-      <h6 class="text-uppercase text-muted mb-0 small">Resumen general</h6>
-      <div class="spinner-border spinner-border-sm" role="status" *ngIf="estadoResumen === 'cargando'"></div>
-      <span class="text-danger small" *ngIf="estadoResumen === 'error'">No se pudo cargar el resumen.</span>
+    <div class="resumen-header d-flex flex-column flex-xl-row gap-3 justify-content-between align-items-xl-center mb-3">
+      <div class="d-flex align-items-center gap-3">
+        <div>
+          <p class="text-muted text-uppercase small mb-1">Panel</p>
+          <h4 class="mb-0">Resumen de capital</h4>
+        </div>
+        <div class="spinner-border spinner-border-sm" role="status" *ngIf="estadoResumen === 'cargando'"></div>
+        <span class="text-danger small" *ngIf="estadoResumen === 'error'">No se pudo cargar el resumen.</span>
+      </div>
+      <form class="resumen-fechas d-flex flex-column flex-sm-row align-items-sm-end gap-2">
+        <div>
+          <label for="resumen-desde" class="form-label small text-muted mb-1">Desde</label>
+          <input
+            type="date"
+            id="resumen-desde"
+            class="form-control form-control-sm"
+            [(ngModel)]="filtroDesde"
+            name="resumenDesde"
+          />
+        </div>
+        <div>
+          <label for="resumen-hasta" class="form-label small text-muted mb-1">Hasta</label>
+          <input
+            type="date"
+            id="resumen-hasta"
+            class="form-control form-control-sm"
+            [(ngModel)]="filtroHasta"
+            name="resumenHasta"
+          />
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary btn-sm" (click)="cargarResumen()">
+            <i class="bi bi-search me-1"></i>
+            Filtrar
+          </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarResumenFiltros()">
+            <i class="bi bi-eraser me-1"></i>
+            Limpiar
+          </button>
+        </div>
+      </form>
     </div>
-    <div class="row g-3" *ngIf="resumen && estadoResumen === 'listo'; else resumenVacio">
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Saldo real</span>
-          <p class="fs-4 fw-semibold text-primary mb-0">{{ resumen.saldoReal | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+    <div class="row g-3" *ngIf="resumenListo; else resumenVacio">
+      <div class="col-12">
+        <div class="row g-3 align-items-stretch">
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div
+              class="resumen-card resumen-card--highlight border rounded p-3 h-100"
+              matTooltip="Saldo disponible luego de restar todas las salidas de efectivo al capital actual."
+            >
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="text-muted text-uppercase small">Saldo real</span>
+                <span class="badge text-bg-light text-primary">Actual</span>
+              </div>
+              <p class="fs-3 fw-bold mb-1" [ngClass]="montoColor(resumen?.saldoReal ?? 0)">
+                {{ resumen?.saldoReal | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </p>
+              <small class="text-muted">Liquidez disponible</small>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div
+              class="resumen-card border rounded p-3 h-100"
+              matTooltip="Capital total de la empresa: activos menos pasivos registrados."
+            >
+              <span class="text-muted text-uppercase small d-block mb-1">Capital neto</span>
+              <p class="fs-3 fw-semibold mb-1" [ngClass]="montoColor(resumen?.capitalNeto ?? 0)">
+                {{ resumen?.capitalNeto | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </p>
+              <small class="text-muted">Activos - pasivos</small>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div
+              class="resumen-card border rounded p-3 h-100"
+              matTooltip="Resultado del periodo: entradas menos salidas y costos asociados."
+            >
+              <span class="text-muted text-uppercase small d-block mb-1">Ganancias</span>
+              <p class="fs-3 fw-semibold mb-1" [ngClass]="montoColor(resumen?.totalGanancias ?? 0)">
+                {{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </p>
+              <small class="text-muted">Resultado en el periodo</small>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div
+              class="resumen-card border rounded p-3 h-100"
+              matTooltip="Cantidad total de unidades vendidas en el rango consultado."
+            >
+              <span class="text-muted text-uppercase small">Unidades vendidas</span>
+              <p class="fs-5 fw-semibold text-primary mb-0">{{ resumen?.totalUnidadesVendidas | number }}</p>
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-xl-4">
+            <div
+              class="resumen-card border rounded p-3 h-100"
+              matTooltip="Equivalencia en cajas completas vendidas."
+            >
+              <span class="text-muted text-uppercase small">Cajas vendidas</span>
+              <p class="fs-5 fw-semibold text-primary mb-0">
+                {{ resumen?.totalCajasVendidas | number:'1.0-2' }}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Capital neto</span>
-          <p class="fs-4 fw-semibold text-success mb-0">{{ resumen.capitalNeto | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+      <div class="col-12 col-xxl-8">
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div
+              class="chart-card border rounded p-3 h-100"
+              matTooltip="Compara todo el efectivo entrante contra las salidas y crédito pendiente."
+            >
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <span class="text-muted text-uppercase small d-block">Flujo de capital</span>
+                  <p class="fw-semibold mb-0">Entradas vs salidas</p>
+                </div>
+                <i class="bi bi-bar-chart-line fs-4 text-primary"></i>
+              </div>
+              <ng-container *ngIf="comparativoFlujo.length; else sinDatosFlujo">
+                <div class="chart-bar mb-3" *ngFor="let item of comparativoFlujo">
+                  <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>{{ item.label }}</span>
+                    <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+                  <div class="chart-bar__track">
+                    <div
+                      class="chart-bar__fill"
+                      [ngClass]="{
+                        'bg-success': item.clase === 'entradas',
+                        'bg-danger': item.clase === 'salidas',
+                        'bg-warning text-dark': item.clase === 'pendiente'
+                      }"
+                      [style.width.%]="maxFlujoValor ? (item.valor / maxFlujoValor) * 100 : 0"
+                    >
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #sinDatosFlujo>
+                <p class="text-muted mb-0">No hay movimientos para graficar.</p>
+              </ng-template>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div
+              class="chart-card border rounded p-3 h-100"
+              matTooltip="Muestra cuánto crédito se ha otorgado, lo recuperado y lo pendiente."
+            >
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <span class="text-muted text-uppercase small d-block">Cartera</span>
+                  <p class="fw-semibold mb-0">Crédito vs abonos</p>
+                </div>
+                <i class="bi bi-graph-up-arrow fs-4 text-success"></i>
+              </div>
+              <ng-container *ngIf="creditoComparativo.length; else sinDatosCredito">
+                <div class="chart-bar mb-3" *ngFor="let item of creditoComparativo">
+                  <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>{{ item.label }}</span>
+                    <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+                  <div class="chart-bar__track">
+                    <div
+                      class="chart-bar__fill"
+                      [ngClass]="{
+                        'bg-primary': item.clase === 'otorgado',
+                        'bg-success': item.clase === 'abonos',
+                        'bg-warning text-dark': item.clase === 'pendiente'
+                      }"
+                      [style.width.%]="maxCreditoValor ? (item.valor / maxCreditoValor) * 100 : 0"
+                    ></div>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #sinDatosCredito>
+                <p class="text-muted mb-0">No hay créditos registrados.</p>
+              </ng-template>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Total ventas</span>
-          <p class="fs-4 fw-semibold text-success mb-0">{{ resumen.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+      <div class="col-12 col-xxl-4">
+        <div
+          class="chart-card border rounded p-3 h-100"
+          matTooltip="Indicador visual del margen de ganancia respecto a las ventas del periodo."
+        >
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span class="text-muted text-uppercase small d-block">Rentabilidad</span>
+              <p class="fw-semibold mb-0">Margen del periodo</p>
+            </div>
+            <i class="bi bi-speedometer2 fs-4 text-info"></i>
+          </div>
+          <div class="gauge mx-auto mb-3" [style.background]="rentabilidadGaugeBackground">
+            <div class="gauge__inner" [ngClass]="rentabilidadEsPositiva ? 'text-success' : 'text-danger'">
+              <span class="gauge__value">{{ rentabilidadPorcentaje | number:'1.0-1' }}%</span>
+              <small class="text-muted d-block">sobre ventas</small>
+            </div>
+          </div>
+          <p class="text-muted small mb-1">
+            Ganancia acumulada:
+            <span class="fw-semibold">{{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </p>
+          <p class="text-muted small mb-0">
+            Ventas totales:
+            <span class="fw-semibold">{{ resumen?.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+          </p>
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Total compras</span>
-          <p class="fs-4 fw-semibold text-danger mb-0">{{ resumen.totalSalidas | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+      <div class="col-12 col-xl-6">
+        <div
+          class="chart-card border rounded p-3 h-100"
+          matTooltip="Ranking de productos con mayor participación en ventas."
+        >
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span class="text-muted text-uppercase small d-block">Top productos</span>
+              <p class="fw-semibold mb-0">Participación por ventas</p>
+            </div>
+            <i class="bi bi-trophy fs-4 text-warning"></i>
+          </div>
+          <div *ngIf="productosDestacados.length > 0; else sinTopProductos" class="d-flex flex-column gap-3">
+            <div class="top-product" *ngFor="let producto of productosDestacados; trackBy: trackProducto">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                <div>
+                  <p class="fw-semibold mb-0">{{ producto.productoNombre }}</p>
+                  <small class="text-muted d-block">
+                    {{ producto.cantidadVendida }} uds · {{ producto.totalVendido | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </small>
+                </div>
+                <span class="fw-semibold text-muted">
+                  {{ (producto.participacionPorcentaje / 100) | percent:'1.0-1' }}
+                </span>
+              </div>
+              <div class="top-product-bar">
+                <div class="top-product-bar__fill" [style.width.%]="producto.participacionPorcentaje"></div>
+              </div>
+            </div>
+          </div>
+          <ng-template #sinTopProductos>
+            <p class="text-muted mb-0">No hay productos destacados en el rango consultado.</p>
+          </ng-template>
         </div>
       </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Ganancias</span>
-          <p class="fs-4 fw-semibold text-primary mb-0">{{ resumen.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="resumen-card border rounded p-3 h-100">
-          <span class="text-muted text-uppercase small">Crédito pendiente</span>
-          <p class="fs-5 fw-semibold mb-0">{{ resumen.totalCreditoPendiente | currency:'COP':'symbol-narrow':'1.0-0' }}</p>
+      <div class="col-12 col-xl-6">
+        <div
+          class="chart-card border rounded p-3 h-100"
+          matTooltip="Clientes con mayor aporte en las ventas del periodo."
+        >
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <span class="text-muted text-uppercase small d-block">Top clientes</span>
+              <p class="fw-semibold mb-0">Participación por compras</p>
+            </div>
+            <i class="bi bi-people fs-4 text-primary"></i>
+          </div>
+          <div *ngIf="clientesDestacados.length > 0; else sinTopClientes" class="d-flex flex-column gap-3">
+            <div class="top-product" *ngFor="let cliente of clientesDestacados; trackBy: trackCliente">
+              <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                <div>
+                  <p class="fw-semibold mb-0">{{ cliente.clienteNombre }}</p>
+                  <small class="text-muted d-block">
+                    {{ cliente.totalVentas }} compras ·
+                    {{ cliente.montoComprado | currency:'COP':'symbol-narrow':'1.0-0' }}
+                  </small>
+                </div>
+                <span class="fw-semibold text-muted">
+                  {{ (cliente.participacionPorcentaje / 100) | percent:'1.0-1' }}
+                </span>
+              </div>
+              <div class="top-product-bar">
+                <div class="top-product-bar__fill top-client__fill" [style.width.%]="cliente.participacionPorcentaje"></div>
+              </div>
+            </div>
+          </div>
+          <ng-template #sinTopClientes>
+            <p class="text-muted mb-0">No hay clientes destacados en el rango consultado.</p>
+          </ng-template>
         </div>
       </div>
     </div>

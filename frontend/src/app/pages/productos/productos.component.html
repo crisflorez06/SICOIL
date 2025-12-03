@@ -11,11 +11,13 @@
           [(ngModel)]="terminoBusqueda"
           (keyup.enter)="buscarProductos()"
         />
-        <button class="btn btn-outline-primary" type="button" (click)="buscarProductos()">
-          Buscar
+        <button class="btn btn-outline-primary d-flex align-items-center gap-2" type="button" (click)="buscarProductos()">
+          <i class="bi bi-search"></i>
+          <span>Buscar</span>
         </button>
-        <button class="btn btn-outline-secondary" type="button" (click)="reiniciarBusqueda()">
-          Reiniciar
+        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" type="button" (click)="reiniciarBusqueda()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+          <span>Reiniciar</span>
         </button>
       </div>
     </div>
