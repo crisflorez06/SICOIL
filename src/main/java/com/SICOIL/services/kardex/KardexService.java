@@ -41,6 +41,7 @@ public class KardexService {
      * @param pageable parámetros de paginación y ordenamiento
      * @param productoId identificador del producto a filtrar; puede ser {@code null}
      * @param usuarioId identificador del usuario que registró el movimiento; puede ser {@code null}
+     * @param nombreProducto fragmento del nombre del producto para filtrar (insensible a mayúsculas); puede ser {@code null}
      * @param tipo tipo de movimiento (ENTRADA, SALIDA); puede ser {@code null}
      * @param desde fecha inicial del rango a consultar; puede ser {@code null}
      * @param hasta fecha final del rango a consultar; puede ser {@code null}
@@ -51,14 +52,15 @@ public class KardexService {
             Pageable pageable,
             Long productoId,
             Long usuarioId,
+            String nombreProducto,
             MovimientoTipo tipo,
             LocalDate desde,
             LocalDate hasta
     ) {
-        Specification<Kardex> spec = KardexSpecification.filtros(productoId, usuarioId, tipo, desde, hasta);
+        Specification<Kardex> spec = KardexSpecification.filtros(productoId, usuarioId, nombreProducto, tipo, desde, hasta);
 
-        log.debug("Buscando movimientos de kardex con filtros productoId={}, usuarioId={}, tipo={}, desde={}, hasta={}",
-                productoId, usuarioId, tipo, desde, hasta);
+        log.debug("Buscando movimientos de kardex con filtros productoId={}, usuarioId={}, nombreProducto={}, tipo={}, desde={}, hasta={}",
+                productoId, usuarioId, nombreProducto, tipo, desde, hasta);
         return kardexRepository.findAll(spec, pageable)
                 .map(kardexMapper::entityToResponse);
     }

@@ -22,6 +22,7 @@ export class HeaderComponent {
   readonly links = [
     { path: '/capital', label: 'Dashboard' },
     { path: '/productos', label: 'Productos' },
+    { path: '/movimientos', label: 'Movimientos' },
     { path: '/clientes', label: 'Clientes' },
     { path: '/ventas', label: 'Ventas' },
     { path: '/cartera', label: 'Cartera' },

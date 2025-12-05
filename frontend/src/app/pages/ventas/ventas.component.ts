@@ -46,6 +46,7 @@ export class VentasComponent implements OnInit {
   private filasExpandida = new Set<number>();
   registrandoVenta = false;
   private anulandoVentas = new Set<number>();
+  private comprobantesDescargando = new Set<number>();
 
   ngOnInit(): void {
     this.cargarVentas();
@@ -187,6 +188,10 @@ export class VentasComponent implements OnInit {
     return this.anulandoVentas.has(ventaId);
   }
 
+  estaDescargandoComprobante(ventaId: number): boolean {
+    return this.comprobantesDescargando.has(ventaId);
+  }
+
   anularVenta(venta: VentaListadoResponse): void {
     if (!venta.activa || this.anulandoVentas.has(venta.ventaId)) {
       return;
@@ -223,5 +228,35 @@ export class VentasComponent implements OnInit {
           },
         });
     });
+  }
+
+  descargarComprobante(venta: VentaListadoResponse): void {
+    if (this.comprobantesDescargando.has(venta.ventaId)) {
+      return;
+    }
+    this.comprobantesDescargando.add(venta.ventaId);
+    this.ventaService
+      .descargarComprobante(venta.ventaId)
+      .pipe(
+        finalize(() => {
+          this.comprobantesDescargando.delete(venta.ventaId);
+        }),
+      )
+      .subscribe({
+        next: (blob) => {
+          const enlace = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          enlace.href = url;
+          enlace.download = `comprobante-venta-${venta.ventaId}.pdf`;
+          enlace.click();
+          URL.revokeObjectURL(url);
+          this.mensajeService.success('Comprobante generado correctamente.');
+        },
+        error: (error) => {
+          this.apiErrorService.handle(error, {
+            contextMessage: 'No se pudo generar el comprobante.',
+          });
+        },
+      });
   }
 }

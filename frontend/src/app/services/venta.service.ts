@@ -54,4 +54,10 @@ export class VentaService {
   obtenerFiltrosRegistro(): Observable<VentaFiltrosResponse> {
     return this.http.get<VentaFiltrosResponse>(`${environment.apiUrl}/filtros`);
   }
+
+  descargarComprobante(ventaId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${ventaId}/comprobante`, {
+      responseType: 'blob',
+    });
+  }
 }

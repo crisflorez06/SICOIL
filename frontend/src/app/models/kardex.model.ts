@@ -1,4 +1,4 @@
-export type MovimientoTipo = 'ENTRADA' | 'SALIDA';
+export type MovimientoTipo = 'ENTRADA' | 'SALIDA' | 'VENTA';
 
 export interface KardexResponse {
   id: number;
@@ -18,6 +18,7 @@ export interface KardexFiltro {
   sort?: string;
   productoId?: number;
   usuarioId?: number;
+  nombreProducto?: string;
   tipo?: MovimientoTipo;
   desde?: string;
   hasta?: string;

@@ -4,6 +4,7 @@ import com.SICOIL.models.Venta;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -88,4 +89,15 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             left join fetch d.producto
             """)
     List<Venta> findAllWithDetalleAndRelations();
+
+    @Query("""
+            select v
+            from Venta v
+            left join fetch v.detalles d
+            left join fetch v.cliente
+            left join fetch v.usuario
+            left join fetch d.producto
+            where v.id = :ventaId
+            """)
+    Optional<Venta> findByIdWithDetalleAndRelations(@Param("ventaId") Long ventaId);
 }

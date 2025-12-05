@@ -48,8 +48,9 @@ export class EditarProductoDialogComponent {
     if (!payload) {
       return;
     }
+    const nombreSeleccionado = ((payload.nombre ?? '').trim() || this.data.nombre).toLocaleUpperCase();
     const resultado: ProductoActualizarRequest = {
-      nombre: payload.nombre?.trim() ?? this.data.nombre,
+      nombre: nombreSeleccionado,
       cantidadPorCajas: payload.cantidadPorCajas ?? this.data.cantidadPorCajas,
     };
     this.dialogRef.close(resultado);

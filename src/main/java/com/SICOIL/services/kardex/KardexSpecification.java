@@ -30,6 +30,16 @@ public final class KardexSpecification {
         };
     }
 
+    public static Specification<Kardex> productoNombreContains(String nombreProducto) {
+        return (root, query, cb) -> {
+            if (nombreProducto == null || nombreProducto.isBlank()) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + nombreProducto.trim().toLowerCase() + "%";
+            return cb.like(cb.lower(root.get("producto").get("nombre")), pattern);
+        };
+    }
+
     public static Specification<Kardex> tipoEquals(MovimientoTipo tipo) {
         return (root, query, cb) -> {
             if (tipo == null) {
@@ -58,11 +68,13 @@ public final class KardexSpecification {
 
     public static Specification<Kardex> filtros(Long productoId,
                                                 Long usuarioId,
+                                                String nombreProducto,
                                                 MovimientoTipo tipo,
                                                 LocalDate desde,
                                                 LocalDate hasta) {
         return Specification.where(productoIdEquals(productoId))
                 .and(usuarioIdEquals(usuarioId))
+                .and(productoNombreContains(nombreProducto))
                 .and(tipoEquals(tipo))
                 .and(fechaBetween(desde, hasta));
     }

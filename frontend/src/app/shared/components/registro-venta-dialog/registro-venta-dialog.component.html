@@ -75,6 +75,7 @@
                   [matAutocomplete]="productoAuto"
                   autocomplete="off"
                   [disabled]="productosDisponibles.length === 0"
+                  class="text-uppercase"
                 />
                 <mat-error *ngIf="itemForm.get('productoNombre')?.hasError('required')">
                   Selecciona un producto.
@@ -85,7 +86,7 @@
                   autoActiveFirstOption
                   (optionSelected)="seleccionarProducto($event.option.value)"
                 >
-                  <mat-option *ngFor="let producto of productosFiltrados" [value]="producto.nombreProducto">
+                  <mat-option *ngFor="let producto of productosFiltrados" [value]="producto.nombreProducto" class="text-uppercase">
                     {{ producto.nombreProducto }}
                   </mat-option>
                   <mat-option *ngIf="productosFiltrados.length === 0" disabled>
@@ -183,7 +184,7 @@
               <tbody>
                 <tr *ngFor="let item of itemsRegistrados; let i = index">
                   <td>
-                    <div class="fw-semibold">{{ item.productoNombre }}</div>
+                    <div class="fw-semibold text-uppercase">{{ item.productoNombre }}</div>
                   </td>
                   <td class="text-end">{{ item.costoUnitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                   <td class="text-end">{{ item.precioVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</td>

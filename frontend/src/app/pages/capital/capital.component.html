@@ -227,7 +227,7 @@
             <div class="top-product" *ngFor="let producto of productosDestacados; trackBy: trackProducto">
               <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                 <div>
-                  <p class="fw-semibold mb-0">{{ producto.productoNombre }}</p>
+                  <p class="fw-semibold mb-0 text-uppercase">{{ producto.productoNombre }}</p>
                   <small class="text-muted d-block">
                     {{ producto.cantidadVendida }} uds · {{ producto.totalVendido | currency:'COP':'symbol-narrow':'1.0-0' }}
                   </small>

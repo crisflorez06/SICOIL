@@ -30,6 +30,7 @@ export class RegistroProductoDialogComponent {
   readonly formulario = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(120)]],
     presentacion: ['UNIDAD' as 'CUARTO' | 'UNIDAD' | 'PINTA' | 'GALON', Validators.required],
+    cantidadPorCajas: [1, [Validators.required, Validators.min(1)]],
     precioCompra: [null as number | null, [Validators.required, Validators.min(0.01)]],
     stock: [null as number | null, [Validators.required, Validators.min(0)]],
   });
@@ -49,13 +50,15 @@ export class RegistroProductoDialogComponent {
     }
     const precioFinal = payload.precioCompra ?? 0;
     const stockFinal = payload.stock ?? 0;
-    const nombreBase = payload.nombre?.trim() ?? '';
+    const cantidadPorCajas = payload.cantidadPorCajas ?? 1;
+    const nombreBase = (payload.nombre ?? '').trim();
     const presentacion = payload.presentacion ?? 'UNIDAD';
-    const nombreFinal = nombreBase ? `${nombreBase} ${presentacion}` : presentacion;
+    const nombreNormalizado = nombreBase ? nombreBase.toLocaleUpperCase() : '';
+    const nombreFinal = nombreNormalizado ? `${nombreNormalizado} ${presentacion}` : presentacion;
 
     const resultado: ProductoRequest = {
-      nombre: nombreFinal,
-      cantidadPorCajas: 1,
+      nombre: nombreFinal.toLocaleUpperCase(),
+      cantidadPorCajas,
       precioCompra: precioFinal,
       stock: stockFinal,
     };

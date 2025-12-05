@@ -246,7 +246,7 @@ public class VentaService {
             }
             String observacion = String.format("Venta #%d", venta.getId());
             log.debug("Registrando salida inventario por venta {} producto {} cantidad {}", venta.getId(), producto.getId(), cantidad);
-            inventarioService.registrarSalida(producto.getId(), cantidad, observacion);
+            inventarioService.registrarSalida(producto.getId(), cantidad, observacion, MovimientoTipo.VENTA);
         }
     }
 

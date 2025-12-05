@@ -182,7 +182,7 @@ public class ProductoService {
 
         if (guardado.getStock() != null && guardado.getStock() > 0) {
             log.debug("Registrando stock inicial para producto {} con cantidad {}", guardado.getId(), guardado.getStock());
-            inventarioService.registrarStockInicial(guardado, "Stock inicial del producto");
+            inventarioService.registrarStockInicial(guardado, null);
         }
 
         return productoMapper.entitytoResponse(guardado);

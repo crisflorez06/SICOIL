@@ -3,7 +3,7 @@
   <form [formGroup]="formulario" class="d-flex flex-column gap-3">
     <mat-form-field appearance="outline">
       <mat-label>Nombre</mat-label>
-      <input matInput formControlName="nombre" />
+      <input matInput formControlName="nombre" class="text-uppercase" />
       <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
       <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
     </mat-form-field>

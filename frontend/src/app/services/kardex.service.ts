@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Page } from '../core/types/page';
 import { KardexFiltro, KardexResponse } from '../models/kardex.model';
@@ -24,6 +24,9 @@ export class KardexService {
     if (filtro.usuarioId) {
       params = params.set('usuarioId', filtro.usuarioId.toString());
     }
+    if (filtro.nombreProducto) {
+      params = params.set('nombreProducto', filtro.nombreProducto);
+    }
     if (filtro.tipo) {
       params = params.set('tipo', filtro.tipo);
     }
@@ -34,6 +37,21 @@ export class KardexService {
       params = params.set('hasta', filtro.hasta);
     }
 
-    return this.http.get<Page<KardexResponse>>(this.baseUrl, { params });
+    return this.http
+      .get<Page<KardexResponse>>(this.baseUrl, { params, observe: 'response' })
+      .pipe(
+        map((response: HttpResponse<Page<KardexResponse>>) => {
+          if (response.body) {
+            return response.body;
+          }
+          return {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            size: filtro.size ?? 20,
+            number: filtro.page ?? 0,
+          };
+        })
+      );
   }
 }

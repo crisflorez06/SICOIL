@@ -11,6 +11,7 @@
             formControlName="nombreProducto"
             [matAutocomplete]="productoAuto"
             autocomplete="off"
+            class="text-uppercase"
           />
           <mat-error *ngIf="formulario.get('nombreProducto')?.hasError('required')">
             Este campo es obligatorio.
@@ -18,7 +19,7 @@
           <mat-error *ngIf="nombreInvalido">Debes seleccionar un producto existente.</mat-error>
           <mat-autocomplete #productoAuto="matAutocomplete" autoActiveFirstOption>
             <mat-option *ngIf="cargandoSugerencias" class="text-muted" disabled>Cargando opciones...</mat-option>
-            <mat-option *ngFor="let nombre of sugerenciasNombres" [value]="nombre">
+            <mat-option *ngFor="let nombre of sugerenciasNombres" [value]="nombre" class="text-uppercase">
               {{ nombre }}
             </mat-option>
             <mat-option *ngIf="!cargandoSugerencias && sugerenciasNombres.length === 0" disabled>
@@ -66,7 +67,7 @@
           <table mat-table [dataSource]="productosRegistrados" class="table table-sm align-middle mb-0">
             <ng-container matColumnDef="nombre">
               <th mat-header-cell *matHeaderCellDef>Producto</th>
-              <td mat-cell *matCellDef="let element">{{ element.nombreProducto }}</td>
+              <td mat-cell *matCellDef="let element" class="text-uppercase">{{ element.nombreProducto }}</td>
             </ng-container>
 
             <ng-container matColumnDef="precio">

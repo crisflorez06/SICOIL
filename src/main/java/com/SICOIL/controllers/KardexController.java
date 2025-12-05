@@ -32,13 +32,14 @@ public class KardexController {
             @PageableDefault(size = 20, sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) Long productoId,
             @RequestParam(required = false) Long usuarioId,
+            @RequestParam(required = false) String nombreProducto,
             @RequestParam(required = false) MovimientoTipo tipo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
 
         Page<KardexResponse> movimientos =
-                kardexService.buscar(pageable, productoId, usuarioId, tipo, desde, hasta);
+                kardexService.buscar(pageable, productoId, usuarioId, nombreProducto, tipo, desde, hasta);
 
         if (movimientos.isEmpty()) {
             return ResponseEntity.noContent().build();
@@ -48,4 +49,3 @@ public class KardexController {
     }
 
 }
-

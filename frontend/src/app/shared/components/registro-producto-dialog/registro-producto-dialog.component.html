@@ -3,7 +3,7 @@
   <form [formGroup]="formulario" class="d-flex flex-column gap-3">
     <mat-form-field appearance="outline">
       <mat-label>Nombre</mat-label>
-      <input matInput placeholder="Ej. Aceite Premium" formControlName="nombre" />
+      <input matInput placeholder="Ej. Aceite Premium" formControlName="nombre" class="text-uppercase" />
       <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
       <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
     </mat-form-field>
@@ -19,6 +19,15 @@
       <mat-error *ngIf="formulario.get('presentacion')?.hasError('required')">
         Selecciona una presentación.
       </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Capacidad por caja</mat-label>
+      <input matInput type="number" min="1" step="1" formControlName="cantidadPorCajas" />
+      <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('required')">
+        Este campo es obligatorio.
+      </mat-error>
+      <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('min')">Debe ser al menos 1.</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline">

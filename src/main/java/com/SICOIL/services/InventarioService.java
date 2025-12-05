@@ -67,7 +67,21 @@ public class InventarioService {
 
     /**
      * Registra la salida de stock para un producto, utilizada tanto al eliminar productos
-     * como al realizar una venta.
+     * como al realizar una venta u otros movimientos negativos. Este método delega el
+     * registro en el kardex con tipo {@link MovimientoTipo#SALIDA}.
+     *
+     * @param productoId identificador del producto al cual se le realizará la salida
+     * @param cantidad número de unidades a descontar del inventario
+     * @param observacion comentario o motivo asociado a la salida
+     * @return la entidad {@link Producto} actualizada después de la operación
+     */
+    public Producto registrarSalida(Long productoId, Integer cantidad, String observacion) {
+        return registrarSalida(productoId, cantidad, observacion, MovimientoTipo.SALIDA);
+    }
+
+    /**
+     * Registra la salida de stock para un producto permitiendo especificar el tipo de
+     * movimiento que quedará trazado en el kardex (por ejemplo, {@link MovimientoTipo#VENTA}).
      * El método valida la cantidad solicitada, verifica el stock disponible e impacta
      * el kardex para mantener trazabilidad del movimiento.
      *
@@ -77,23 +91,28 @@ public class InventarioService {
      *   <li>Recuperación del producto y cálculo del nuevo stock.</li>
      *   <li>Validación de stock insuficiente para evitar valores negativos.</li>
      *   <li>Actualización del inventario con la cantidad descontada.</li>
-     *   <li>Registro del movimiento de salida en el kardex.</li>
+     *   <li>Registro del movimiento de salida en el kardex con el tipo solicitado.</li>
      * </ul>
      *
      * @param productoId identificador del producto al cual se le realizará la salida
      * @param cantidad número de unidades a descontar del inventario
      * @param observacion comentario o motivo asociado a la salida
+     * @param tipoMovimiento tipo a registrar en el kardex; si es {@code null} se utilizará {@link MovimientoTipo#SALIDA}
      * @return la entidad {@link Producto} actualizada después de la operación
      * @throws IllegalArgumentException si la cantidad es inválida o si el stock disponible es insuficiente
      * @throws EntityNotFoundException si no existe un producto con el identificador especificado
      */
-    public Producto registrarSalida(Long productoId, Integer cantidad, String observacion) {
+    public Producto registrarSalida(Long productoId,
+                                    Integer cantidad,
+                                    String observacion,
+                                    MovimientoTipo tipoMovimiento) {
         if (cantidad == null || cantidad <= 0) {
             log.warn("Cantidad inválida ({}) al registrar salida para producto {}", cantidad, productoId);
             throw new IllegalArgumentException("La cantidad debe ser mayor a cero.");
         }
 
-        log.info("Registrando salida. Producto {} cantidad {}", productoId, cantidad);
+        MovimientoTipo tipoFinal = tipoMovimiento != null ? tipoMovimiento : MovimientoTipo.SALIDA;
+        log.info("Registrando salida. Producto {} cantidad {} tipo {}", productoId, cantidad, tipoFinal);
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + productoId));
 
@@ -109,7 +128,7 @@ public class InventarioService {
         producto.setStock(nuevoStock);
 
         Producto guardado = productoRepository.save(producto);
-        kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.SALIDA);
+        kardexService.registrarMovimiento(guardado, cantidad, observacion, tipoFinal);
 
         return guardado;
     }
@@ -169,7 +188,7 @@ public class InventarioService {
                         guardado,
                         request.getPrecioCompra(),
                         request.getCantidad(),
-                        "Ingreso inventario producto " + request.getNombreProducto()
+                        "Ingreso de " + request.getCantidad() +  " de " + request.getNombreProducto()
                 );
                 log.info("Actualizado stock de producto {} manteniendo precio. Nuevo stock {}", guardado.getId(), guardado.getStock());
                 return guardado;
@@ -194,7 +213,7 @@ public class InventarioService {
                 guardado,
                 request.getPrecioCompra(),
                 request.getCantidad(),
-                "Ingreso inventario nuevo precio " + productoDb.getNombre()
+                "Ingreso de " + request.getCantidad() + " de " + productoDb.getNombre() + " con nuevo precio: " + (int)request.getPrecioCompra()
         );
         log.info("Creado producto {} por nuevo precio {} con stock {}", guardado.getId(), request.getPrecioCompra(), request.getCantidad());
         return guardado;
@@ -231,7 +250,7 @@ public class InventarioService {
                     producto,
                     costoUnitario,
                     stockInicial,
-                    observacion != null ? observacion : "Stock inicial producto " + producto.getNombre()
+                    observacion != null ? observacion : "Stock inicial producto " + producto.getNombre() + " Cantidad: " + producto.getStock()
             );
         }
     }

@@ -155,18 +155,35 @@
             </button>
           </td>
           <td class="text-end">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              *ngIf="venta.activa; else ventaAnulada"
-              (click)="anularVenta(venta)"
-              [disabled]="estaAnulandoVenta(venta.ventaId)"
-            >
-              <ng-container *ngIf="!estaAnulandoVenta(venta.ventaId); else anulandoTpl">
-                <i class="bi bi-x-circle me-1"></i>
-                <span>Anular</span>
-              </ng-container>
-            </button>
+            <div class="d-flex gap-2 justify-content-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                (click)="descargarComprobante(venta)"
+                [disabled]="estaDescargandoComprobante(venta.ventaId)"
+                title="Descargar comprobante en PDF"
+              >
+                <ng-container *ngIf="!estaDescargandoComprobante(venta.ventaId); else descargandoTpl">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </ng-container>
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                *ngIf="venta.activa; else ventaAnulada"
+                (click)="anularVenta(venta)"
+                [disabled]="estaAnulandoVenta(venta.ventaId)"
+                title="Anular venta"
+              >
+                <ng-container *ngIf="!estaAnulandoVenta(venta.ventaId); else anulandoTpl">
+                  <i class="bi bi-x-circle"></i>
+                </ng-container>
+              </button>
+            </div>
+            <ng-template #descargandoTpl>
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span>Generando...</span>
+            </ng-template>
             <ng-template #anulandoTpl>
               <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
               <span>Procesando...</span>
@@ -194,7 +211,7 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let item of venta.items">
-                        <td>{{ item.productoNombre }}</td>
+                        <td class="text-uppercase">{{ item.productoNombre }}</td>
                         <td class="text-end">{{ item.precioCompra | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                         <td class="text-end">{{ item.precioVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                         <td class="text-end">{{ item.cantidad }}</td>

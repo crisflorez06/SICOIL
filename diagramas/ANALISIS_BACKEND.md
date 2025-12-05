@@ -50,7 +50,7 @@ Todos los modelos se ubican en `src/main/java/com/SICOIL/models`.
 - Lleva historial de entradas/salidas de inventario.
 
 ### MovimientoTipo (enum)
-- Valores: `ENTRADA`, `SALIDA`.
+- Valores: `ENTRADA`, `SALIDA`, `VENTA` (este último permite distinguir salidas generadas por ventas del resto de ajustes).
 
 ### Producto
 - Tabla `productos`.
