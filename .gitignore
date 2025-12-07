@@ -5,3 +5,6 @@ frontend/.angular/
 
 # Maven build output
 target/
+
+# Local environment overrides
+.env

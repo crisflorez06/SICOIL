@@ -1,35 +1,77 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: mysql-SICOIL
-    ports:
-      - "3310:3306"
+    container_name: sicoil-mysql
+    restart: unless-stopped
     environment:
-      MYSQL_DATABASE: SICOIL
-      MYSQL_ROOT_PASSWORD: nacional2000
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-SICOIL}
+      MYSQL_USER: ${MYSQL_USER:-sicoil}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_HOST_PORT:-3310}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - SICOIL-net
-
+      - sicoil-net
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: SICOIL-phpmyadmin
-    restart: always
+    container_name: sicoil-phpmyadmin
+    restart: unless-stopped
     ports:
       - "8081:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: nacional2000
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     depends_on:
       - mysql
     networks:
-      - SICOIL-net
+      - sicoil-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sicoil-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-SICOIL}
+      DB_USERNAME: ${MYSQL_USER:-sicoil}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      HIBERNATE_DDL_AUTO: ${HIBERNATE_DDL_AUTO:-update}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - sicoil-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sicoil-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - sicoil-net
 
 volumes:
   mysql_data:
 
 networks:
-  SICOIL-net:
+  sicoil-net:
