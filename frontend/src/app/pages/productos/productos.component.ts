@@ -46,6 +46,7 @@ export class ProductosComponent implements OnInit {
   creandoProducto = false;
   private variantesProcesando = new Set<number>();
   private productosProcesando = new Set<string>();
+  tablaScrollActiva = false;
 
   ngOnInit(): void {
     this.cargarProductos();
@@ -259,6 +260,11 @@ export class ProductosComponent implements OnInit {
 
   esFilaExpandida(index: number): boolean {
     return this.filasExpandida.has(index);
+  }
+
+  onTablaScroll(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    this.tablaScrollActiva = !!target && target.scrollTop > 0;
   }
 
   get hayProductos(): boolean {

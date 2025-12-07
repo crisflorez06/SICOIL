@@ -1,96 +1,140 @@
-<section class="card border-0 shadow-sm p-4">
-  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
-    <div class="w-100">
-      <label for="input-busqueda-cliente" class="form-label fw-semibold mb-1">Buscar cliente</label>
-      <div class="input-group input-group-sm">
+<section class="clients-shell">
+  <div class="clients-hero glass-panel">
+    <div class="hero-copy">
+      <p class="hero-kicker text-uppercase">Clientes</p>
+      <h1 class="hero-title">Relaciones comerciales</h1>
+      <p class="hero-lede">
+        Centraliza tus contactos y mantén sus datos al día con la misma estética envolvente del resto de SICOIL.
+      </p>
+      <div class="hero-metrics">
+        <div class="metric-chip">
+          <span>En esta vista</span>
+          <strong>{{ clientes.length }}</strong>
+        </div>
+        <div class="metric-chip">
+          <span>Filtro aplicado</span>
+          <strong>{{ terminoBusqueda ? terminoBusqueda : 'Sin filtro' }}</strong>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button
+          type="button"
+          class="btn btn-primary d-inline-flex align-items-center gap-2"
+          (click)="registrarCliente()"
+          [disabled]="registrandoCliente"
+        >
+          <ng-container *ngIf="!registrandoCliente; else registrandoTpl">
+            <i class="bi bi-person-plus"></i>
+            <span>Nuevo cliente</span>
+          </ng-container>
+        </button>
+      </div>
+    </div>
+
+    <form class="clients-search" novalidate (ngSubmit)="buscarClientes()">
+      <label for="input-busqueda-cliente" class="form-label">Buscar cliente</label>
+      <div class="search-control">
         <input
           type="text"
           id="input-busqueda-cliente"
           class="form-control"
-          placeholder="Nombre del cliente"
+          placeholder="Nombre o identificación"
           [(ngModel)]="terminoBusqueda"
-          (keyup.enter)="buscarClientes()"
+          name="terminoBusqueda"
         />
-        <button type="button" class="btn btn-primary" (click)="buscarClientes()">
-          <i class="bi bi-search me-1"></i>
-          <span>Buscar</span>
-        </button>
-        <button type="button" class="btn btn-outline-secondary" (click)="reiniciarBusqueda()">
-          <i class="bi bi-arrow-counterclockwise me-1"></i>
-          <span>Reiniciar</span>
-        </button>
+        <div class="search-actions">
+          <button class="btn btn-primary d-inline-flex align-items-center gap-2" type="submit">
+            <i class="bi bi-search"></i>
+            <span>Buscar</span>
+          </button>
+          <button
+            class="btn btn-outline-light d-inline-flex align-items-center gap-2"
+            type="button"
+            (click)="reiniciarBusqueda()"
+          >
+            <i class="bi bi-arrow-counterclockwise"></i>
+            <span>Reiniciar</span>
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
-      <button
-        type="button"
-        class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-2"
-        (click)="registrarCliente()"
-        [disabled]="registrandoCliente"
-      >
-        <ng-container *ngIf="!registrandoCliente; else registrandoTpl">
-          <i class="bi bi-person-plus"></i>
-          <span>Nuevo cliente</span>
-        </ng-container>
-      </button>
-    </div>
-  </header>
+    </form>
+  </div>
 
   <ng-template #registrandoTpl>
     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
     <span>Guardando...</span>
   </ng-template>
 
-  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estado === 'cargando'">
+  <div class="status-banner status-banner--info" *ngIf="estado === 'cargando'">
     <div class="spinner-border spinner-border-sm" role="status"></div>
-    <span class="fw-semibold mb-0">Cargando clientes...</span>
+    <span>Cargando clientes...</span>
   </div>
 
-  <div class="alert alert-danger" *ngIf="estado === 'error'">
-    <span class="fw-semibold d-block mb-1">Ups...</span>
-    <span class="mb-0">No pudimos cargar los clientes. Intenta nuevamente.</span>
+  <div class="status-banner status-banner--error" *ngIf="estado === 'error'">
+    <i class="bi bi-wifi-off"></i>
+    <div>
+      <strong>Ups...</strong>
+      <p class="mb-0">No pudimos cargar los clientes. Intenta nuevamente.</p>
+    </div>
   </div>
 
-  <div class="alert alert-secondary" *ngIf="estado === 'listo' && !hayClientes">
-    <span class="mb-0">No hay clientes registrados todavía.</span>
+  <div class="status-banner status-banner--muted" *ngIf="estado === 'listo' && !hayClientes">
+    <i class="bi bi-inboxes"></i>
+    <span>No hay clientes registrados todavía.</span>
   </div>
 
-  <div class="table-responsive" *ngIf="estado === 'listo' && hayClientes">
-    <table class="table table-striped table-hover align-middle mb-0">
-      <thead class="table-light text-uppercase text-muted small">
-        <tr>
-          <th>Cliente</th>
-          <th>Contacto</th>
-          <th>Dirección</th>
-          <th>Registrado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let cliente of clientes">
-          <td>
-            <div class="fw-semibold">{{ cliente.nombre }}</div>
-            <div class="text-muted small">ID: {{ cliente.id }}</div>
-          </td>
-          <td>
-            <div class="fw-semibold" *ngIf="cliente.telefono; else sinTelefono">
-              {{ cliente.telefono }}
-            </div>
-            <ng-template #sinTelefono>
-              <span class="text-muted small">Sin teléfono</span>
-            </ng-template>
-          </td>
-          <td>
-            <div *ngIf="cliente.direccion; else sinDireccion">{{ cliente.direccion }}</div>
-            <ng-template #sinDireccion>
-              <span class="text-muted small">Sin dirección</span>
-            </ng-template>
-          </td>
-          <td>
-            <div>{{ cliente.fechaRegistro | date:'shortDate' }}</div>
-            <small class="text-muted">{{ cliente.fechaRegistro | date:'shortTime' }}</small>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="surface-panel table-panel" *ngIf="estado === 'listo' && hayClientes">
+    <div
+      class="table-responsive clients-table__wrapper"
+      (scroll)="onTablaScroll($event)"
+      [class.clients-table__wrapper--scrolled]="tablaScrollActiva"
+    >
+      <table class="table clients-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Contacto</th>
+            <th>Dirección</th>
+            <th>Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cliente of clientes">
+            <td>
+              <div class="client-profile">
+                <div class="client-avatar">
+                  <i class="bi bi-person-badge"></i>
+                </div>
+                <div>
+                  <p class="client-name mb-0">{{ cliente.nombre }}</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <ng-container *ngIf="cliente.telefono; else sinTelefono">
+                <p class="client-contact mb-0">{{ cliente.telefono }}</p>
+              </ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="cliente.direccion; else sinDireccion">
+                <p class="client-address mb-0">{{ cliente.direccion }}</p>
+              </ng-container>
+            </td>
+            <td class="text-end">
+              <p class="client-date mb-0">{{ cliente.fechaRegistro | date:'mediumDate' }}</p>
+              <small class="text-muted">{{ cliente.fechaRegistro | date:'shortTime' }}</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
+
+<ng-template #sinTelefono>
+  <span class="text-muted small">Sin teléfono</span>
+</ng-template>
+
+<ng-template #sinDireccion>
+  <span class="text-muted small">Sin dirección</span>
+</ng-template>

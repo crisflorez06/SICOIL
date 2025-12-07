@@ -1,56 +1,92 @@
 <nav class="app-header shadow">
-  <div class="header-inner">
-    <a class="brand" routerLink="/">
-      <span class="brand-mark">S</span>
-      <span class="brand-copy">
-        <span class="brand-title">SICOIL</span>
-        <span class="brand-subtitle">Operaciones y control</span>
-      </span>
-    </a>
+  <ng-container *ngIf="usuario$ | async as usuario; else loginLink">
+    <div class="header-inner">
+      <div class="header-left">
+        <button
+          type="button"
+          class="menu-toggle"
+          (click)="toggleMenu()"
+          aria-label="Abrir menú principal"
+        >
+          <i class="bi bi-list"></i>
+        </button>
+        <a class="brand" routerLink="/">
+          <span class="brand-mark">S</span>
+          <span class="brand-copy">
+            <span class="brand-title">SICOIL</span>
+            <span class="brand-subtitle">Operaciones y control</span>
+          </span>
+        </a>
+      </div>
+      <div class="session-info">
+        <div class="date-chip">
+          <span>{{ today | date: 'mediumDate' }}</span>
+        </div>
+        <div class="user-pill">
+          <span class="dot"></span>
+          <span class="user-name">{{ usuario.usuario }}</span>
+        </div>
+        <button
+          class="btn-logout"
+          type="button"
+          (click)="cerrarSesion()"
+          [disabled]="cerrandoSesion"
+        >
+          {{ cerrandoSesion ? 'Cerrando...' : 'Cerrar sesión' }}
+        </button>
+      </div>
+    </div>
 
-    <ng-container *ngIf="usuario$ | async as usuario; else loginLink">
-      <div class="nav-content">
-        <ul class="nav-links">
-          <li *ngFor="let link of links">
-            <a
-              [routerLink]="link.path"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-            >
-              {{ link.label }}
-            </a>
-          </li>
-        </ul>
-
-        <div class="session-info">
-          <div class="date-chip">
-            <span>{{ today | date: 'mediumDate' }}</span>
-          </div>
-          <div class="user-pill">
-            <span class="dot"></span>
-            <span class="user-name">{{ usuario.usuario }}</span>
-          </div>
-          <button
-            class="btn-logout"
-            type="button"
-            (click)="cerrarSesion()"
-            [disabled]="cerrandoSesion"
+    <div class="nav-overlay" *ngIf="menuAbierto" (click)="cerrarMenu()"></div>
+    <aside class="nav-drawer" [class.nav-drawer--open]="menuAbierto">
+      <div class="nav-drawer__header">
+        <div class="brand-mini">
+          <span class="brand-mark">S</span>
+          <span class="brand-copy">
+            <span class="brand-title">SICOIL</span>
+            <span class="brand-subtitle">Operaciones y control</span>
+          </span>
+        </div>
+        <button type="button" class="close-drawer" (click)="cerrarMenu()" aria-label="Cerrar menú">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <ul class="drawer-links">
+        <li *ngFor="let link of links">
+          <a
+            [routerLink]="link.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="cerrarMenu()"
           >
-            {{ cerrandoSesion ? 'Cerrando...' : 'Cerrar sesión' }}
-          </button>
-        </div>
+            {{ link.label }}
+          </a>
+        </li>
+      </ul>
+      <div class="nav-drawer__footer">
+        <p class="drawer-label">Hoy</p>
+        <strong class="drawer-date">{{ today | date: 'fullDate' }}</strong>
       </div>
-    </ng-container>
+    </aside>
+  </ng-container>
 
-    <ng-template #loginLink>
-      <div class="nav-content">
-        <div class="session-info">
-          <div class="date-chip">
-            <span>{{ today | date: 'mediumDate' }}</span>
-          </div>
-          <a class="btn-logout" routerLink="/login">Iniciar sesión</a>
-        </div>
+  <ng-template #loginLink>
+    <div class="header-inner">
+      <div class="header-left">
+        <a class="brand" routerLink="/">
+          <span class="brand-mark">S</span>
+          <span class="brand-copy">
+            <span class="brand-title">SICOIL</span>
+            <span class="brand-subtitle">Operaciones y control</span>
+          </span>
+        </a>
       </div>
-    </ng-template>
-  </div>
+      <div class="session-info">
+        <div class="date-chip">
+          <span>{{ today | date: 'mediumDate' }}</span>
+        </div>
+        <a class="btn-logout" routerLink="/login">Iniciar sesión</a>
+      </div>
+    </div>
+  </ng-template>
 </nav>

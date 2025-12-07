@@ -8,7 +8,7 @@
   background: linear-gradient(135deg, rgba(2, 6, 23, 0.95), rgba(8, 47, 73, 0.9));
   border-top: 1px solid rgba(148, 163, 184, 0.15);
   color: #e2e8f0;
-  padding: 2.5rem 1.5rem;
+  padding: 1.5rem 1.5rem;
 }
 
 .footer-inner {
@@ -16,7 +16,7 @@
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
+  gap: 1.5rem;
   justify-content: space-between;
   align-items: center;
 }
@@ -25,19 +25,19 @@
   display: flex;
   gap: 1.25rem;
   align-items: center;
-  flex: 1 1 360px;
+  flex: 1 1 320px;
   font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .footer-mark {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   letter-spacing: 0.12em;
   color: #0f172a;
   background: linear-gradient(135deg, #22d3ee, #0ea5e9, #6366f1);
@@ -51,9 +51,10 @@
 }
 
 .footer-text {
-  margin: 0 0 0.85rem;
+  margin: 0;
   color: rgba(226, 232, 240, 0.8);
-  max-width: 38ch;
+  max-width: 36ch;
+  font-size: 0.9rem;
 }
 
 .footer-link {
@@ -63,6 +64,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  font-size: 0.95rem;
 }
 
 .footer-link::after {
@@ -78,24 +80,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.85rem;
-  flex: 1 1 280px;
-}
-
-.footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem 1.5rem;
-}
-
-.footer-links a {
-  color: rgba(226, 232, 240, 0.9);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.footer-links a:hover {
-  color: #5eead4;
+  gap: 0.55rem;
+  flex: 1 1 240px;
 }
 
 .footer-copy {

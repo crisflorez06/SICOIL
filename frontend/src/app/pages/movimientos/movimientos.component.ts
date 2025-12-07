@@ -24,6 +24,7 @@ export class MovimientosComponent implements OnInit {
   totalPaginas = 0;
   totalElementos = 0;
   tamanoPagina = 10;
+  tablaScrollActiva = false;
 
   filtroNombreProducto = '';
   filtroTipo: MovimientoTipo | '' = '';
@@ -106,6 +107,43 @@ export class MovimientosComponent implements OnInit {
       return;
     }
     this.buscarMovimientos(pagina);
+  }
+
+  movimientoChipClase(tipo: MovimientoTipo): string {
+    switch (tipo) {
+      case 'ENTRADA':
+        return 'movement-chip--entrada';
+      case 'SALIDA':
+        return 'movement-chip--salida';
+      default:
+        return 'movement-chip--venta';
+    }
+  }
+
+  movimientoCantidadClase(tipo: MovimientoTipo): string {
+    switch (tipo) {
+      case 'ENTRADA':
+        return 'movement-qty--positive';
+      case 'SALIDA':
+        return 'movement-qty--negative';
+      default:
+        return 'movement-qty--neutral';
+    }
+  }
+
+  cantidadPrefijo(tipo: MovimientoTipo): string {
+    if (tipo === 'ENTRADA') {
+      return '+';
+    }
+    if (tipo === 'SALIDA') {
+      return '-';
+    }
+    return '';
+  }
+
+  onTablaScroll(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    this.tablaScrollActiva = !!target && target.scrollTop > 0;
   }
 
   get hayMovimientos(): boolean {

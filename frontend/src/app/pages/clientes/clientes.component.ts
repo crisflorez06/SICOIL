@@ -29,6 +29,7 @@ export class ClientesComponent implements OnInit {
   estado: EstadoCarga = 'idle';
   terminoBusqueda = '';
   registrandoCliente = false;
+  tablaScrollActiva = false;
 
   ngOnInit(): void {
     this.cargarClientes();
@@ -95,5 +96,10 @@ export class ClientesComponent implements OnInit {
 
   get hayClientes(): boolean {
     return this.clientes.length > 0;
+  }
+
+  onTablaScroll(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    this.tablaScrollActiva = !!target && target.scrollTop > 0;
   }
 }

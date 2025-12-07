@@ -51,6 +51,7 @@ export class CapitalComponent implements OnInit {
 
   resumen: CapitalResumenResponse | null = null;
   registrandoInyeccion = false;
+  tablaScrollActiva = false;
 
   ngOnInit(): void {
     this.buscarMovimientos();
@@ -344,5 +345,10 @@ export class CapitalComponent implements OnInit {
 
   montoClase(origen: CapitalOrigen): string {
     return origen === 'COMPRA' ? 'text-danger' : 'text-success';
+  }
+
+  onTablaScroll(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    this.tablaScrollActiva = !!target && target.scrollTop > 0;
   }
 }

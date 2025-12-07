@@ -1,177 +1,220 @@
-<section class="card border-0 shadow-sm p-4">
-  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
-    <div class="w-100">
-      <label for="input-busqueda-producto" class="form-label fw-semibold mb-1">Buscar producto</label>
-      <div class="input-group input-group-sm">
+<section class="inventory-shell">
+  <div class="inventory-hero glass-panel">
+    <div class="hero-copy">
+      <p class="hero-kicker text-uppercase">Inventario</p>
+      <h1 class="hero-title">Catálogo de productos</h1>
+      <p class="hero-lede">Monitorea ingresos, variantes y stock en un panel integrado con el resto de SICOIL.</p>
+      <div class="hero-metrics">
+        <div class="metric-chip">
+          <span>En esta vista</span>
+          <strong>{{ productos.length }}</strong>
+        </div>
+        <div class="metric-chip">
+          <span>Total registrados</span>
+          <strong>{{ totalElementos }}</strong>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button
+          type="button"
+          class="btn btn-outline-light d-flex align-items-center gap-2"
+          (click)="registrarProducto()"
+          [disabled]="creandoProducto"
+        >
+          <ng-container *ngIf="!creandoProducto; else creandoProductoTpl">
+            <i class="bi bi-box-seam"></i>
+            <span>Nuevo producto</span>
+          </ng-container>
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary d-flex align-items-center gap-2"
+          (click)="agregarIngreso()"
+          [disabled]="registrandoIngreso"
+        >
+          <ng-container *ngIf="!registrandoIngreso; else guardandoIngreso">
+            <i class="bi bi-plus-circle"></i>
+            <span>Agregar ingreso</span>
+          </ng-container>
+        </button>
+      </div>
+    </div>
+
+    <form class="inventory-search" novalidate (ngSubmit)="buscarProductos()">
+      <label for="input-busqueda-producto" class="form-label">Buscar producto</label>
+      <div class="search-control">
         <input
           type="text"
           id="input-busqueda-producto"
           class="form-control"
-          placeholder="Nombre del producto"
+          placeholder="Nombre del producto o referencia"
           [(ngModel)]="terminoBusqueda"
-          (keyup.enter)="buscarProductos()"
+          name="terminoBusqueda"
         />
-        <button class="btn btn-outline-primary d-flex align-items-center gap-2" type="button" (click)="buscarProductos()">
-          <i class="bi bi-search"></i>
-          <span>Buscar</span>
-        </button>
-        <button class="btn btn-outline-secondary d-flex align-items-center gap-2" type="button" (click)="reiniciarBusqueda()">
-          <i class="bi bi-arrow-counterclockwise"></i>
-          <span>Reiniciar</span>
-        </button>
+        <div class="search-actions">
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-search me-1"></i>
+            Buscar
+          </button>
+          <button class="btn btn-outline-light" type="button" (click)="reiniciarBusqueda()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>
+            Reiniciar
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
-      <button
-        type="button"
-        class="btn btn-outline-success btn-sm d-flex align-items-center gap-2"
-        (click)="registrarProducto()"
-        [disabled]="creandoProducto"
-      >
-        <ng-container *ngIf="!creandoProducto; else creandoProductoTpl">
-          <i class="bi bi-box-seam"></i>
-          <span>Nuevo producto</span>
-        </ng-container>
-        <ng-template #creandoProductoTpl>
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          <span>Guardando...</span>
-        </ng-template>
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary btn-sm d-flex align-items-center gap-2"
-        (click)="agregarIngreso()"
-        [disabled]="registrandoIngreso"
-      >
-        <ng-container *ngIf="!registrandoIngreso; else guardandoIngreso">
-          <i class="bi bi-plus-circle"></i>
-          <span>Agregar ingreso</span>
-        </ng-container>
-        <ng-template #guardandoIngreso>
-          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          <span>Guardando...</span>
-        </ng-template>
-      </button>
-    </div>
-  </header>
+    </form>
+  </div>
 
-  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estado === 'cargando'">
+  <ng-template #creandoProductoTpl>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>Guardando...</span>
+  </ng-template>
+  <ng-template #guardandoIngreso>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>Guardando...</span>
+  </ng-template>
+
+  <div class="status-banner status-banner--info" *ngIf="estado === 'cargando'">
     <div class="spinner-border spinner-border-sm" role="status"></div>
-    <span class="fw-semibold mb-0">Cargando productos...</span>
+    <span>Cargando productos...</span>
   </div>
 
-  <div class="alert alert-danger" *ngIf="estado === 'error'">
-    <span class="fw-semibold d-block mb-1">Ups...</span>
-    <span class="mb-0">No pudimos cargar los productos. Intenta nuevamente.</span>
+  <div class="status-banner status-banner--error" *ngIf="estado === 'error'">
+    <i class="bi bi-wifi-off"></i>
+    <div>
+      <strong>Ups...</strong>
+      <p class="mb-0">No pudimos cargar los productos. Intenta nuevamente.</p>
+    </div>
   </div>
 
-  <div class="alert alert-secondary" *ngIf="estado === 'listo' && !hayProductos">
-    <span class="mb-0">No hay productos registrados todavía.</span>
+  <div class="status-banner status-banner--muted" *ngIf="estado === 'listo' && !hayProductos">
+    <i class="bi bi-inboxes"></i>
+    <span>No hay productos registrados todavía.</span>
   </div>
 
-  <div class="table-responsive" *ngIf="estado === 'listo' && hayProductos">
-    <table class="table table-striped table-hover align-middle mb-0">
-      <thead class="table-light text-uppercase text-muted small">
-        <tr>
-          <th>Producto</th>
-          <th class="text-end">Stock total</th>
-          <th class="text-end">Capacidad (cajas)</th>
-          <th class="text-end">Variantes</th>
-          <th class="text-end">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let producto of productos; let i = index">
-        <tr>
-          <td>
-            <div class="fw-semibold text-uppercase">{{ producto.nombre }}</div>
-          </td>
-          <td class="text-end">
-            <div class="fw-semibold">{{ producto.stockTotal }}</div>
-          </td>
-          <td class="text-end">
-            <div class="fw-semibold">{{ producto.cantidadPorCajas }}</div>
-          </td>
-          <td class="text-end">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-primary"
-              [disabled]="!producto.variantes.length"
-              (click)="toggleVariantes(i)"
-            >
-              <i class="bi bi-eye me-1" aria-hidden="true"></i>
-              <span>Variantes</span>
-              <span class="badge text-bg-primary-subtle text-primary-emphasis ms-2">
-                {{ producto.variantes.length }}
-              </span>
-            </button>
-          </td>
-          <td class="text-end">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2"
-              (click)="editarProducto(producto)"
-              [disabled]="estaProductoProcesando(producto.nombre)"
-            >
-              <ng-container *ngIf="!estaProductoProcesando(producto.nombre); else editandoProducto">
-                <i class="bi bi-pencil"></i>
-                <span>Editar</span>
-              </ng-container>
-              <ng-template #editandoProducto>
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>Guardando...</span>
-              </ng-template>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="esFilaExpandida(i)">
-          <td colspan="5">
-            <div class="bg-white border rounded shadow-sm p-3">
-              <h6 class="fw-semibold mb-3 text-muted text-uppercase small">Variantes registradas</h6>
-              <div *ngIf="producto.variantes.length; else sinVariantes">
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle mb-0">
-                    <thead class="table-light text-uppercase text-muted small">
-                      <tr>
-                        <th scope="col">Precio por unidad</th>
-                        <th scope="col">Precio por caja</th>
-                        <th scope="col">Stock</th>
-                        <th scope="col" class="text-end">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let variante of producto.variantes">
-                        <td>{{ variante.precioCompra | number:'1.0-0' }}</td>
-                        <td>{{ (variante.precioCompra * producto.cantidadPorCajas) | number:'1.0-0' }}</td>
-                        <td>{{ variante.stock }}</td>
-                        <td class="text-end d-flex gap-2 justify-content-end">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger"
-                            (click)="eliminarCantidadVariante(producto, variante)"
-                            [disabled]="variante.stock === 0 || estaVarianteProcesando(variante.id)"
-                          >
-                            <i class="bi bi-box-arrow-down"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+  <div class="surface-panel table-panel" *ngIf="estado === 'listo' && hayProductos">
+    <div
+      class="table-responsive inventory-table__wrapper"
+      (scroll)="onTablaScroll($event)"
+      [class.inventory-table__wrapper--scrolled]="tablaScrollActiva"
+    >
+      <table class="table inventory-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-end">Stock total</th>
+            <th class="text-end">Capacidad (cajas)</th>
+            <th class="text-end">Variantes</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let producto of productos; let i = index">
+            <tr>
+              <td>
+                <div class="inventory-product">
+                  <p class="inventory-product__name">{{ producto.nombre }}</p>
                 </div>
-              </div>
-              <ng-template #sinVariantes>
-                <p class="text-muted mb-0">No hay variantes registradas para este producto.</p>
-              </ng-template>
-            </div>
-          </td>
-        </tr>
-        </ng-container>
-      </tbody>
-    </table>
+              </td>
+              <td class="text-end">
+                <span class="inventory-value">{{ producto.stockTotal }}</span>
+              </td>
+              <td class="text-end">
+                <span class="inventory-value">{{ producto.cantidadPorCajas }}</span>
+              </td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2"
+                  [disabled]="!producto.variantes.length"
+                  (click)="toggleVariantes(i)"
+                >
+                  <i class="bi bi-eye"></i>
+                  <span>Variantes</span>
+                  <span class="badge text-bg-primary-subtle text-primary-emphasis">{{ producto.variantes.length }}</span>
+                </button>
+              </td>
+              <td class="text-end">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                  (click)="editarProducto(producto)"
+                  [disabled]="estaProductoProcesando(producto.nombre)"
+                >
+                  <ng-container *ngIf="!estaProductoProcesando(producto.nombre); else editandoProducto">
+                    <i class="bi bi-pencil"></i>
+                    <span>Editar</span>
+                  </ng-container>
+                </button>
+                <ng-template #editandoProducto>
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  <span>Guardando...</span>
+                </ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="esFilaExpandida(i)">
+              <td colspan="5">
+                <div class="variant-panel">
+                  <div class="variant-panel__head">
+                    <div>
+                      <p class="variant-panel__title">Variantes registradas</p>
+                      <small class="text-muted">Gestiona precios y stock específicos por presentación.</small>
+                    </div>
+                    <span class="variant-count badge text-bg-light text-primary">
+                      {{ producto.variantes.length }} en total
+                    </span>
+                  </div>
+                  <div *ngIf="producto.variantes.length; else sinVariantes">
+                    <div class="table-responsive">
+                      <table class="table table-sm variant-table mb-0">
+                        <thead>
+                          <tr>
+                            <th>Precio unidad</th>
+                            <th>Precio por caja</th>
+                            <th>Stock</th>
+                            <th class="text-end">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let variante of producto.variantes">
+                            <td>$ {{ variante.precioCompra | number:'1.0-0' }}</td>
+                            <td>$ {{ (variante.precioCompra * producto.cantidadPorCajas) | number:'1.0-0' }}</td>
+                            <td>{{ variante.stock }}</td>
+                            <td class="text-end">
+                              <button
+                                type="button"
+                                class="btn btn-outline-danger btn-sm"
+                                title="Eliminar stock"
+                                (click)="eliminarCantidadVariante(producto, variante)"
+                                [disabled]="variante.stock === 0 || estaVarianteProcesando(variante.id)"
+                              >
+                                <ng-container *ngIf="!estaVarianteProcesando(variante.id); else eliminandoVariante">
+                                  <i class="bi bi-box-arrow-down"></i>
+                                </ng-container>
+                              </button>
+                              <ng-template #eliminandoVariante>
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                              </ng-template>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <ng-template #sinVariantes>
+                    <p class="text-muted mb-0">No hay variantes registradas para este producto.</p>
+                  </ng-template>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <nav
-    class="d-flex justify-content-end mt-3"
+    class="inventory-pagination"
     *ngIf="estado === 'listo' && mostrarPaginador"
     aria-label="Paginación de productos"
   >

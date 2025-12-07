@@ -1,24 +1,37 @@
-<h2 mat-dialog-title class="h5 mb-2">Eliminar cantidad</h2>
-<div mat-dialog-content>
-  <p class="text-muted mb-3">Variante: <strong>{{ data.nombre }}</strong> (stock actual: {{ data.stock }})</p>
-  <form [formGroup]="formulario" class="d-flex flex-column gap-3">
-    <mat-form-field appearance="outline">
-      <mat-label>Cantidad a eliminar</mat-label>
-      <input matInput type="number" min="1" [max]="data.stock" step="1" formControlName="cantidad" />
-      <mat-error *ngIf="formulario.get('cantidad')?.hasError('required')">Este campo es obligatorio.</mat-error>
-      <mat-error *ngIf="formulario.get('cantidad')?.hasError('min')">Debe ser al menos 1.</mat-error>
-      <mat-error *ngIf="formulario.get('cantidad')?.hasError('max')">
-        No puedes eliminar más de {{ data.stock }} unidades.
-      </mat-error>
-    </mat-form-field>
+<section class="inventory-dialog">
+  <header class="dialog-header">
+    <div class="dialog-icon dialog-icon--danger">
+      <i class="bi bi-exclamation-octagon"></i>
+    </div>
+    <div>
+      <h2 mat-dialog-title class="dialog-title">Eliminar cantidad</h2>
+      <p class="dialog-subtitle">
+        Variante <strong>{{ data.nombre }}</strong> · Stock actual: {{ data.stock }}
+      </p>
+    </div>
+  </header>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Observación (opcional)</mat-label>
-      <textarea matInput rows="3" formControlName="observacion"></textarea>
-    </mat-form-field>
-  </form>
-</div>
-<div mat-dialog-actions class="d-flex justify-content-end gap-2 mt-3">
-  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="warn" type="button" (click)="guardar()">Eliminar</button>
-</div>
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="formulario" class="d-flex flex-column gap-3">
+      <mat-form-field appearance="outline">
+        <mat-label>Cantidad a eliminar</mat-label>
+        <input matInput type="number" min="1" [max]="data.stock" step="1" formControlName="cantidad" />
+        <mat-error *ngIf="formulario.get('cantidad')?.hasError('required')">Este campo es obligatorio.</mat-error>
+        <mat-error *ngIf="formulario.get('cantidad')?.hasError('min')">Debe ser al menos 1.</mat-error>
+        <mat-error *ngIf="formulario.get('cantidad')?.hasError('max')">
+          No puedes eliminar más de {{ data.stock }} unidades.
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Observación (opcional)</mat-label>
+        <textarea matInput rows="3" formControlName="observacion"></textarea>
+      </mat-form-field>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="dialog-actions">
+    <button type="button" class="dialog-btn dialog-btn--ghost" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="dialog-btn dialog-btn--danger" (click)="guardar()">Eliminar</button>
+  </div>
+</section>

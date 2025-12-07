@@ -47,6 +47,7 @@ export class VentasComponent implements OnInit {
   registrandoVenta = false;
   private anulandoVentas = new Set<number>();
   private comprobantesDescargando = new Set<number>();
+  tablaScrollActiva = false;
 
   ngOnInit(): void {
     this.cargarVentas();
@@ -258,5 +259,10 @@ export class VentasComponent implements OnInit {
           });
         },
       });
+  }
+
+  onTablaScroll(event: Event): void {
+    const target = event.target as HTMLElement | null;
+    this.tablaScrollActiva = !!target && target.scrollTop > 0;
   }
 }

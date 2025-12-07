@@ -37,6 +37,10 @@ export class CarteraComponent implements OnInit {
   filtroHasta = '';
 
   private abonosEnProceso = new Set<number>();
+  totalClientesConSaldo = 0;
+  saldoPendienteTotal = 0;
+  totalAbonosAcumulados = 0;
+  totalCreditosAcumulados = 0;
 
   ngOnInit(): void {
     this.cargarCartera();
@@ -57,6 +61,7 @@ export class CarteraComponent implements OnInit {
     this.carteraService.listarPendientes(filtros).subscribe({
       next: (respuesta) => {
         this.cartera = respuesta ?? [];
+        this.actualizarResumenes();
         this.estado = 'listo';
       },
       error: () => {
@@ -140,4 +145,11 @@ export class CarteraComponent implements OnInit {
     return this.abonosEnProceso.has(clienteId);
   }
 
+  private actualizarResumenes(): void {
+    const clientes = Array.isArray(this.cartera) ? this.cartera : [];
+    this.totalClientesConSaldo = clientes.length;
+    this.saldoPendienteTotal = clientes.reduce((total, cliente) => total + Number(cliente.saldoPendiente ?? 0), 0);
+    this.totalAbonosAcumulados = clientes.reduce((total, cliente) => total + Number(cliente.totalAbonos ?? 0), 0);
+    this.totalCreditosAcumulados = clientes.reduce((total, cliente) => total + Number(cliente.totalCreditos ?? 0), 0);
+  }
 }

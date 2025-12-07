@@ -1,29 +1,41 @@
-<h2 mat-dialog-title class="h5 mb-2">Registrar nuevo cliente</h2>
-<div mat-dialog-content>
-  <form [formGroup]="formulario" class="d-flex flex-column gap-3">
-    <mat-form-field appearance="outline">
-      <mat-label>Nombre completo</mat-label>
-      <input matInput placeholder="Ej. Juan Pérez" formControlName="nombre" />
-      <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
-      <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
-    </mat-form-field>
+<section class="inventory-dialog">
+  <header class="dialog-header">
+    <div class="dialog-icon">
+      <i class="bi bi-person-vcard"></i>
+    </div>
+    <div>
+      <h2 mat-dialog-title class="dialog-title">Registrar nuevo cliente</h2>
+      <p class="dialog-subtitle">Captura los datos de contacto para mantener la cartera alineada.</p>
+    </div>
+  </header>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Teléfono</mat-label>
-      <input matInput placeholder="Ej. 3201234567" formControlName="telefono" />
-      <mat-hint>Opcional</mat-hint>
-      <mat-error *ngIf="formulario.get('telefono')?.hasError('maxlength')">Máximo 30 caracteres.</mat-error>
-    </mat-form-field>
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="formulario" class="dialog-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Nombre completo</mat-label>
+        <input matInput placeholder="Ej. Juan Pérez" formControlName="nombre" />
+        <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
+        <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
+      </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Dirección</mat-label>
-      <textarea matInput rows="3" placeholder="Ej. Calle 123 #45-67" formControlName="direccion"></textarea>
-      <mat-hint>Opcional</mat-hint>
-      <mat-error *ngIf="formulario.get('direccion')?.hasError('maxlength')">Máximo 200 caracteres.</mat-error>
-    </mat-form-field>
-  </form>
-</div>
-<div mat-dialog-actions class="d-flex justify-content-end gap-2 mt-3">
-  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" (click)="guardar()">Guardar</button>
-</div>
+      <mat-form-field appearance="outline">
+        <mat-label>Teléfono</mat-label>
+        <input matInput placeholder="Ej. 3201234567" formControlName="telefono" />
+        <mat-hint>Opcional</mat-hint>
+        <mat-error *ngIf="formulario.get('telefono')?.hasError('maxlength')">Máximo 30 caracteres.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Dirección</mat-label>
+        <textarea matInput rows="3" placeholder="Ej. Calle 123 #45-67" formControlName="direccion"></textarea>
+        <mat-hint>Opcional</mat-hint>
+        <mat-error *ngIf="formulario.get('direccion')?.hasError('maxlength')">Máximo 200 caracteres.</mat-error>
+      </mat-form-field>
+    </form>
+  </div>
+
+  <div mat-dialog-actions class="dialog-actions">
+    <button type="button" class="dialog-btn dialog-btn--ghost dialog-btn--compact" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="dialog-btn dialog-btn--primary dialog-btn--compact" (click)="guardar()">Guardar</button>
+  </div>
+</section>

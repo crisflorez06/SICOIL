@@ -1,443 +1,432 @@
-<section class="card border-0 shadow-sm p-4">
-  <section class="mb-4">
-    <div class="resumen-header d-flex flex-column flex-xl-row gap-3 justify-content-between align-items-xl-center mb-3">
-      <div class="d-flex align-items-center gap-3">
-        <div>
-          <p class="text-muted text-uppercase small mb-1">Panel</p>
-          <h4 class="mb-0">Resumen de capital</h4>
+<section class="dashboard-shell">
+  <div class="dashboard-hero glass-panel">
+    <div class="hero-copy">
+      <p class="hero-kicker text-uppercase">Panel general</p>
+      <h1 class="hero-title">Resumen de capital</h1>
+      <p class="hero-lede">Controla liquidez, cartera y ventas con la misma estética envolvente del resto de SICOIL.</p>
+      <div class="hero-status">
+        <div class="status-pill" *ngIf="estadoResumen === 'cargando'">
+          <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span>Actualizando resumen...</span>
         </div>
-        <div class="spinner-border spinner-border-sm" role="status" *ngIf="estadoResumen === 'cargando'"></div>
-        <span class="text-danger small" *ngIf="estadoResumen === 'error'">No se pudo cargar el resumen.</span>
-      </div>
-      <form class="resumen-fechas d-flex flex-column flex-sm-row align-items-sm-end gap-2">
-        <div>
-          <label for="resumen-desde" class="form-label small text-muted mb-1">Desde</label>
-          <input
-            type="date"
-            id="resumen-desde"
-            class="form-control form-control-sm"
-            [(ngModel)]="filtroDesde"
-            name="resumenDesde"
-          />
-        </div>
-        <div>
-          <label for="resumen-hasta" class="form-label small text-muted mb-1">Hasta</label>
-          <input
-            type="date"
-            id="resumen-hasta"
-            class="form-control form-control-sm"
-            [(ngModel)]="filtroHasta"
-            name="resumenHasta"
-          />
-        </div>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-primary btn-sm" (click)="cargarResumen()">
-            <i class="bi bi-search me-1"></i>
-            Filtrar
-          </button>
-          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="limpiarResumenFiltros()">
-            <i class="bi bi-eraser me-1"></i>
-            Limpiar
-          </button>
-        </div>
-      </form>
-    </div>
-    <div class="row g-3" *ngIf="resumenListo; else resumenVacio">
-      <div class="col-12">
-        <div class="row g-3 align-items-stretch">
-          <div class="col-12 col-sm-6 col-xl-4">
-            <div
-              class="resumen-card resumen-card--highlight border rounded p-3 h-100"
-              matTooltip="Saldo disponible luego de restar todas las salidas de efectivo al capital actual."
-            >
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <span class="text-muted text-uppercase small">Saldo real</span>
-                <span class="badge text-bg-light text-primary">Actual</span>
-              </div>
-              <p class="fs-3 fw-bold mb-1" [ngClass]="montoColor(resumen?.saldoReal ?? 0)">
-                {{ resumen?.saldoReal | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </p>
-              <small class="text-muted">Liquidez disponible</small>
-            </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-4">
-            <div
-              class="resumen-card border rounded p-3 h-100"
-              matTooltip="Capital total de la empresa: activos menos pasivos registrados."
-            >
-              <span class="text-muted text-uppercase small d-block mb-1">Capital neto</span>
-              <p class="fs-3 fw-semibold mb-1" [ngClass]="montoColor(resumen?.capitalNeto ?? 0)">
-                {{ resumen?.capitalNeto | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </p>
-              <small class="text-muted">Activos - pasivos</small>
-            </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-4">
-            <div
-              class="resumen-card border rounded p-3 h-100"
-              matTooltip="Resultado del periodo: entradas menos salidas y costos asociados."
-            >
-              <span class="text-muted text-uppercase small d-block mb-1">Ganancias</span>
-              <p class="fs-3 fw-semibold mb-1" [ngClass]="montoColor(resumen?.totalGanancias ?? 0)">
-                {{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </p>
-              <small class="text-muted">Resultado en el periodo</small>
-            </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-4">
-            <div
-              class="resumen-card border rounded p-3 h-100"
-              matTooltip="Cantidad total de unidades vendidas en el rango consultado."
-            >
-              <span class="text-muted text-uppercase small">Unidades vendidas</span>
-              <p class="fs-5 fw-semibold text-primary mb-0">{{ resumen?.totalUnidadesVendidas | number }}</p>
-            </div>
-          </div>
-          <div class="col-12 col-sm-6 col-xl-4">
-            <div
-              class="resumen-card border rounded p-3 h-100"
-              matTooltip="Equivalencia en cajas completas vendidas."
-            >
-              <span class="text-muted text-uppercase small">Cajas vendidas</span>
-              <p class="fs-5 fw-semibold text-primary mb-0">
-                {{ resumen?.totalCajasVendidas | number:'1.0-2' }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-xxl-8">
-        <div class="row g-3">
-          <div class="col-12 col-lg-6">
-            <div
-              class="chart-card border rounded p-3 h-100"
-              matTooltip="Compara todo el efectivo entrante contra las salidas y crédito pendiente."
-            >
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <span class="text-muted text-uppercase small d-block">Flujo de capital</span>
-                  <p class="fw-semibold mb-0">Entradas vs salidas</p>
-                </div>
-                <i class="bi bi-bar-chart-line fs-4 text-primary"></i>
-              </div>
-              <ng-container *ngIf="comparativoFlujo.length; else sinDatosFlujo">
-                <div class="chart-bar mb-3" *ngFor="let item of comparativoFlujo">
-                  <div class="d-flex justify-content-between text-muted small mb-1">
-                    <span>{{ item.label }}</span>
-                    <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-                  </div>
-                  <div class="chart-bar__track">
-                    <div
-                      class="chart-bar__fill"
-                      [ngClass]="{
-                        'bg-success': item.clase === 'entradas',
-                        'bg-danger': item.clase === 'salidas',
-                        'bg-warning text-dark': item.clase === 'pendiente'
-                      }"
-                      [style.width.%]="maxFlujoValor ? (item.valor / maxFlujoValor) * 100 : 0"
-                    >
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-              <ng-template #sinDatosFlujo>
-                <p class="text-muted mb-0">No hay movimientos para graficar.</p>
-              </ng-template>
-            </div>
-          </div>
-          <div class="col-12 col-lg-6">
-            <div
-              class="chart-card border rounded p-3 h-100"
-              matTooltip="Muestra cuánto crédito se ha otorgado, lo recuperado y lo pendiente."
-            >
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                  <span class="text-muted text-uppercase small d-block">Cartera</span>
-                  <p class="fw-semibold mb-0">Crédito vs abonos</p>
-                </div>
-                <i class="bi bi-graph-up-arrow fs-4 text-success"></i>
-              </div>
-              <ng-container *ngIf="creditoComparativo.length; else sinDatosCredito">
-                <div class="chart-bar mb-3" *ngFor="let item of creditoComparativo">
-                  <div class="d-flex justify-content-between text-muted small mb-1">
-                    <span>{{ item.label }}</span>
-                    <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-                  </div>
-                  <div class="chart-bar__track">
-                    <div
-                      class="chart-bar__fill"
-                      [ngClass]="{
-                        'bg-primary': item.clase === 'otorgado',
-                        'bg-success': item.clase === 'abonos',
-                        'bg-warning text-dark': item.clase === 'pendiente'
-                      }"
-                      [style.width.%]="maxCreditoValor ? (item.valor / maxCreditoValor) * 100 : 0"
-                    ></div>
-                  </div>
-                </div>
-              </ng-container>
-              <ng-template #sinDatosCredito>
-                <p class="text-muted mb-0">No hay créditos registrados.</p>
-              </ng-template>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-xxl-4">
-        <div
-          class="chart-card border rounded p-3 h-100"
-          matTooltip="Indicador visual del margen de ganancia respecto a las ventas del periodo."
-        >
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <span class="text-muted text-uppercase small d-block">Rentabilidad</span>
-              <p class="fw-semibold mb-0">Margen del periodo</p>
-            </div>
-            <i class="bi bi-speedometer2 fs-4 text-info"></i>
-          </div>
-          <div class="gauge mx-auto mb-3" [style.background]="rentabilidadGaugeBackground">
-            <div class="gauge__inner" [ngClass]="rentabilidadEsPositiva ? 'text-success' : 'text-danger'">
-              <span class="gauge__value">{{ rentabilidadPorcentaje | number:'1.0-1' }}%</span>
-              <small class="text-muted d-block">sobre ventas</small>
-            </div>
-          </div>
-          <p class="text-muted small mb-1">
-            Ganancia acumulada:
-            <span class="fw-semibold">{{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </p>
-          <p class="text-muted small mb-0">
-            Ventas totales:
-            <span class="fw-semibold">{{ resumen?.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
-          </p>
-        </div>
-      </div>
-      <div class="col-12 col-xl-6">
-        <div
-          class="chart-card border rounded p-3 h-100"
-          matTooltip="Ranking de productos con mayor participación en ventas."
-        >
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <span class="text-muted text-uppercase small d-block">Top productos</span>
-              <p class="fw-semibold mb-0">Participación por ventas</p>
-            </div>
-            <i class="bi bi-trophy fs-4 text-warning"></i>
-          </div>
-          <div *ngIf="productosDestacados.length > 0; else sinTopProductos" class="d-flex flex-column gap-3">
-            <div class="top-product" *ngFor="let producto of productosDestacados; trackBy: trackProducto">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                <div>
-                  <p class="fw-semibold mb-0 text-uppercase">{{ producto.productoNombre }}</p>
-                  <small class="text-muted d-block">
-                    {{ producto.cantidadVendida }} uds · {{ producto.totalVendido | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </small>
-                </div>
-                <span class="fw-semibold text-muted">
-                  {{ (producto.participacionPorcentaje / 100) | percent:'1.0-1' }}
-                </span>
-              </div>
-              <div class="top-product-bar">
-                <div class="top-product-bar__fill" [style.width.%]="producto.participacionPorcentaje"></div>
-              </div>
-            </div>
-          </div>
-          <ng-template #sinTopProductos>
-            <p class="text-muted mb-0">No hay productos destacados en el rango consultado.</p>
-          </ng-template>
-        </div>
-      </div>
-      <div class="col-12 col-xl-6">
-        <div
-          class="chart-card border rounded p-3 h-100"
-          matTooltip="Clientes con mayor aporte en las ventas del periodo."
-        >
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <span class="text-muted text-uppercase small d-block">Top clientes</span>
-              <p class="fw-semibold mb-0">Participación por compras</p>
-            </div>
-            <i class="bi bi-people fs-4 text-primary"></i>
-          </div>
-          <div *ngIf="clientesDestacados.length > 0; else sinTopClientes" class="d-flex flex-column gap-3">
-            <div class="top-product" *ngFor="let cliente of clientesDestacados; trackBy: trackCliente">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                <div>
-                  <p class="fw-semibold mb-0">{{ cliente.clienteNombre }}</p>
-                  <small class="text-muted d-block">
-                    {{ cliente.totalVentas }} compras ·
-                    {{ cliente.montoComprado | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </small>
-                </div>
-                <span class="fw-semibold text-muted">
-                  {{ (cliente.participacionPorcentaje / 100) | percent:'1.0-1' }}
-                </span>
-              </div>
-              <div class="top-product-bar">
-                <div class="top-product-bar__fill top-client__fill" [style.width.%]="cliente.participacionPorcentaje"></div>
-              </div>
-            </div>
-          </div>
-          <ng-template #sinTopClientes>
-            <p class="text-muted mb-0">No hay clientes destacados en el rango consultado.</p>
-          </ng-template>
+        <div class="status-pill status-pill--error" *ngIf="estadoResumen === 'error'">
+          <i class="bi bi-exclamation-triangle"></i>
+          <span>No se pudo cargar el resumen.</span>
         </div>
       </div>
     </div>
-    <ng-template #resumenVacio>
-      <div class="alert alert-secondary mb-0" *ngIf="estadoResumen === 'listo'">
-        No hay información de resumen disponible para los filtros seleccionados.
+    <form class="hero-filters" novalidate>
+      <div class="hero-filter">
+        <label for="resumen-desde" class="form-label">Desde</label>
+        <input
+          type="date"
+          id="resumen-desde"
+          class="form-control"
+          [(ngModel)]="filtroDesde"
+          name="resumenDesde"
+        />
       </div>
-    </ng-template>
-  </section>
+      <div class="hero-filter">
+        <label for="resumen-hasta" class="form-label">Hasta</label>
+        <input
+          type="date"
+          id="resumen-hasta"
+          class="form-control"
+          [(ngModel)]="filtroHasta"
+          name="resumenHasta"
+        />
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-primary btn-sm" (click)="cargarResumen()">
+          <i class="bi bi-search me-1"></i>
+          Filtrar
+        </button>
+        <button type="button" class="btn btn-outline-light btn-sm" (click)="limpiarResumenFiltros()">
+          <i class="bi bi-eraser me-1"></i>
+          Limpiar
+        </button>
+      </div>
+    </form>
+  </div>
 
-  <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3 mb-4">
-    <div class="w-100">
-      <p class="form-label fw-semibold mb-2">Filtros de movimientos</p>
-      <div class="row g-2">
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-origen">Origen</label>
-          <select id="filtro-origen" class="form-select form-select-sm" [(ngModel)]="filtroOrigen">
-            <option value="">Todos</option>
-            <option value="VENTA">Venta</option>
-            <option value="COMPRA">Compra</option>
-            <option value="INYECCION">Inyección</option>
-          </select>
+  <ng-container *ngIf="resumenListo; else resumenVacio">
+    <div class="stat-grid">
+      <article
+        class="stat-card"
+        matTooltip="Saldo disponible luego de restar todas las salidas de efectivo al capital actual."
+      >
+        <div class="stat-card__label">
+          <span>Saldo real</span>
+          <span class="badge text-bg-light text-primary">Actual</span>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-credito">Tipo</label>
-          <select id="filtro-credito" class="form-select form-select-sm" [(ngModel)]="filtroCredito">
-            <option value="">Todos</option>
-            <option value="false">Contado</option>
-            <option value="true">Crédito</option>
-          </select>
+        <p class="stat-card__value" [ngClass]="montoColor(resumen?.saldoReal ?? 0)">
+          {{ resumen?.saldoReal | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </p>
+        <small>Liquidez disponible</small>
+      </article>
+
+      <article
+        class="stat-card"
+        matTooltip="Capital total de la empresa: activos menos pasivos registrados."
+      >
+        <div class="stat-card__label">
+          <span>Capital neto</span>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-ref">Referencia</label>
-          <input
-            type="number"
-            id="filtro-ref"
-            class="form-control form-control-sm"
-            min="0"
-            placeholder="ID relacionado"
-            [(ngModel)]="filtroReferencia"
-          />
+        <p class="stat-card__value" [ngClass]="montoColor(resumen?.capitalNeto ?? 0)">
+          {{ resumen?.capitalNeto | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </p>
+        <small>Activos - pasivos</small>
+      </article>
+
+      <article
+        class="stat-card"
+        matTooltip="Resultado del periodo: entradas menos salidas y costos asociados."
+      >
+        <div class="stat-card__label">
+          <span>Ganancias</span>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-desc">Descripción</label>
-          <input
-            type="text"
-            id="filtro-desc"
-            class="form-control form-control-sm"
-            placeholder="Texto incluido"
-            [(ngModel)]="filtroDescripcion"
-            (keyup.enter)="buscar()"
-          />
+        <p class="stat-card__value" [ngClass]="montoColor(resumen?.totalGanancias ?? 0)">
+          {{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </p>
+        <small>Resultado del periodo</small>
+      </article>
+
+      <div class="stat-grid-break" aria-hidden="true"></div>
+
+      <article
+        class="stat-card stat-card--compact"
+        matTooltip="Cantidad total de unidades vendidas en el rango consultado."
+      >
+        <div class="stat-card__label">
+          <span>Unidades vendidas</span>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-desde">Desde</label>
-          <input type="date" id="filtro-desde" class="form-control form-control-sm" [(ngModel)]="filtroDesde" />
+        <p class="stat-card__subvalue">{{ resumen?.totalUnidadesVendidas | number }}</p>
+      </article>
+
+      <article
+        class="stat-card stat-card--compact"
+        matTooltip="Equivalencia en cajas completas vendidas."
+      >
+        <div class="stat-card__label">
+          <span>Cajas vendidas</span>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-1" for="filtro-hasta">Hasta</label>
-          <input type="date" id="filtro-hasta" class="form-control form-control-sm" [(ngModel)]="filtroHasta" />
+        <p class="stat-card__subvalue">{{ resumen?.totalCajasVendidas | number:'1.0-2' }}</p>
+      </article>
+    </div>
+
+    <div class="insight-grid">
+      <article
+        class="insight-card chart-card"
+        matTooltip="Compara todo el efectivo entrante contra las salidas y crédito pendiente."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Flujo de capital</p>
+            <h3>Entradas vs salidas</h3>
+          </div>
+          <i class="bi bi-bar-chart-line"></i>
         </div>
+        <ng-container *ngIf="comparativoFlujo.length; else sinDatosFlujo">
+          <div class="chart-bar" *ngFor="let item of comparativoFlujo">
+            <div class="chart-bar__meta">
+              <span>{{ item.label }}</span>
+              <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+            </div>
+            <div class="chart-bar__track">
+              <div
+                class="chart-bar__fill"
+                [ngClass]="{
+                  'chart-bar__fill--success': item.clase === 'entradas',
+                  'chart-bar__fill--danger': item.clase === 'salidas',
+                  'chart-bar__fill--warning': item.clase === 'pendiente'
+                }"
+                [style.width.%]="maxFlujoValor ? (item.valor / maxFlujoValor) * 100 : 0"
+              ></div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #sinDatosFlujo>
+          <p class="text-muted mb-0">No hay movimientos para graficar.</p>
+        </ng-template>
+      </article>
+
+      <article
+        class="insight-card chart-card"
+        matTooltip="Muestra cuánto crédito se ha otorgado, lo recuperado y lo pendiente."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Cartera</p>
+            <h3>Crédito vs abonos</h3>
+          </div>
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <ng-container *ngIf="creditoComparativo.length; else sinDatosCredito">
+          <div class="chart-bar" *ngFor="let item of creditoComparativo">
+            <div class="chart-bar__meta">
+              <span>{{ item.label }}</span>
+              <span>{{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+            </div>
+            <div class="chart-bar__track">
+              <div
+                class="chart-bar__fill"
+                [ngClass]="{
+                  'chart-bar__fill--primary': item.clase === 'otorgado',
+                  'chart-bar__fill--success': item.clase === 'abonos',
+                  'chart-bar__fill--warning': item.clase === 'pendiente'
+                }"
+                [style.width.%]="maxCreditoValor ? (item.valor / maxCreditoValor) * 100 : 0"
+              ></div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #sinDatosCredito>
+          <p class="text-muted mb-0">No hay créditos registrados.</p>
+        </ng-template>
+      </article>
+
+      <article
+        class="insight-card chart-card insight-card--gauge"
+        matTooltip="Indicador visual del margen de ganancia respecto a las ventas del periodo."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Rentabilidad</p>
+            <h3>Margen del periodo</h3>
+          </div>
+          <i class="bi bi-speedometer2"></i>
+        </div>
+        <div class="gauge" [style.background]="rentabilidadGaugeBackground">
+          <div class="gauge__inner" [ngClass]="rentabilidadEsPositiva ? 'text-success' : 'text-danger'">
+            <span class="gauge__value">{{ rentabilidadPorcentaje | number:'1.0-1' }}%</span>
+            <small class="text-muted d-block">sobre ventas</small>
+          </div>
+        </div>
+        <p class="insight-foot">
+          Ganancia acumulada:
+          <strong>{{ resumen?.totalGanancias | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+        </p>
+        <p class="insight-foot">
+          Ventas totales:
+          <strong>{{ resumen?.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+        </p>
+      </article>
+
+      <article
+        class="insight-card"
+        matTooltip="Ranking de productos con mayor participación en ventas."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Top productos</p>
+            <h3>Participación por ventas</h3>
+          </div>
+          <i class="bi bi-trophy"></i>
+        </div>
+        <div *ngIf="productosDestacados.length > 0; else sinTopProductos" class="top-list">
+          <div class="top-list__item" *ngFor="let producto of productosDestacados; trackBy: trackProducto">
+            <div>
+              <p class="top-list__title">{{ producto.productoNombre }}</p>
+              <small class="text-muted">
+                {{ producto.cantidadVendida }} uds · {{ producto.totalVendido | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </small>
+            </div>
+            <div class="top-list__value">
+              {{ (producto.participacionPorcentaje / 100) | percent:'1.0-1' }}
+            </div>
+            <div class="top-product-bar">
+              <div class="top-product-bar__fill" [style.width.%]="producto.participacionPorcentaje"></div>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinTopProductos>
+          <p class="text-muted mb-0">No hay productos destacados en el rango consultado.</p>
+        </ng-template>
+      </article>
+
+      <article
+        class="insight-card"
+        matTooltip="Clientes con mayor aporte en las ventas del periodo."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Top clientes</p>
+            <h3>Participación por compras</h3>
+          </div>
+          <i class="bi bi-people"></i>
+        </div>
+        <div *ngIf="clientesDestacados.length > 0; else sinTopClientes" class="top-list">
+          <div class="top-list__item" *ngFor="let cliente of clientesDestacados; trackBy: trackCliente">
+            <div>
+              <p class="top-list__title">{{ cliente.clienteNombre }}</p>
+              <small class="text-muted">
+                {{ cliente.totalVentas }} compras · {{ cliente.montoComprado | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </small>
+            </div>
+            <div class="top-list__value">
+              {{ (cliente.participacionPorcentaje / 100) | percent:'1.0-1' }}
+            </div>
+            <div class="top-product-bar">
+              <div class="top-product-bar__fill top-client__fill" [style.width.%]="cliente.participacionPorcentaje"></div>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinTopClientes>
+          <p class="text-muted mb-0">No hay clientes destacados en el rango consultado.</p>
+        </ng-template>
+      </article>
+    </div>
+  </ng-container>
+
+  <ng-template #resumenVacio>
+    <div class="status-banner status-banner--muted" *ngIf="estadoResumen === 'listo'">
+      <i class="bi bi-info-circle"></i>
+      <span>No hay información de resumen disponible para los filtros seleccionados.</span>
+    </div>
+  </ng-template>
+
+  <section class="surface-panel filters-panel">
+    <div class="filters-header">
+      <div>
+        <p class="filters-title">Movimientos</p>
+        <p class="filters-subtitle mb-0">Refina la tabla con múltiples criterios y genera nuevas inyecciones.</p>
       </div>
-        <div class="w-100 w-md-auto d-flex flex-column flex-md-row gap-2 justify-content-md-end">
-        <button
-          type="button"
-          class="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-2"
-          (click)="registrarInyeccion()"
-          [disabled]="registrandoInyeccion"
-        >
-          <ng-container *ngIf="!registrandoInyeccion; else registrandoInyeccionTpl">
-            <i class="bi bi-plus-circle"></i>
-            <span>Nueva inyección</span>
-          </ng-container>
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2"
-          (click)="buscar()"
-        >
-          <i class="bi bi-search"></i>
-          <span>Buscar</span>
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2"
-          (click)="limpiarFiltros()"
-        >
-          <i class="bi bi-eraser"></i>
-          <span>Limpiar</span>
-        </button>
+      <button
+        type="button"
+        class="btn btn-success d-flex align-items-center gap-2"
+        (click)="registrarInyeccion()"
+        [disabled]="registrandoInyeccion"
+      >
+        <ng-container *ngIf="!registrandoInyeccion; else registrandoInyeccionTpl">
+          <i class="bi bi-plus-circle"></i>
+          <span>Nueva inyección</span>
+        </ng-container>
+      </button>
+    </div>
+    <div class="filters-grid">
+      <div class="filters-field">
+        <label for="filtro-origen">Origen</label>
+        <select id="filtro-origen" class="form-select" [(ngModel)]="filtroOrigen">
+          <option value="">Todos</option>
+          <option value="VENTA">Venta</option>
+          <option value="COMPRA">Compra</option>
+          <option value="INYECCION">Inyección</option>
+        </select>
+      </div>
+      <div class="filters-field">
+        <label for="filtro-credito">Tipo</label>
+        <select id="filtro-credito" class="form-select" [(ngModel)]="filtroCredito">
+          <option value="">Todos</option>
+          <option value="false">Contado</option>
+          <option value="true">Crédito</option>
+        </select>
+      </div>
+      <div class="filters-field">
+        <label for="filtro-desc">Descripción</label>
+        <input
+          type="text"
+          id="filtro-desc"
+          class="form-control"
+          placeholder="Texto incluido"
+          [(ngModel)]="filtroDescripcion"
+          (keyup.enter)="buscar()"
+        />
+      </div>
+      <div class="filters-field">
+        <label for="filtro-desde">Desde</label>
+        <input type="date" id="filtro-desde" class="form-control" [(ngModel)]="filtroDesde" />
+      </div>
+      <div class="filters-field">
+        <label for="filtro-hasta">Hasta</label>
+        <input type="date" id="filtro-hasta" class="form-control" [(ngModel)]="filtroHasta" />
       </div>
     </div>
-  </header>
+    <div class="filters-actions">
+      <button type="button" class="btn btn-primary" (click)="buscar()">
+        <i class="bi bi-search me-1"></i>
+        Buscar
+      </button>
+      <button type="button" class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+        <i class="bi bi-eraser me-1"></i>
+        Limpiar
+      </button>
+    </div>
+  </section>
 
   <ng-template #registrandoInyeccionTpl>
     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
     <span>Guardando...</span>
   </ng-template>
 
-  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estadoMovimientos === 'cargando'">
-    <div class="spinner-border spinner-border-sm" role="status"></div>
-    <span class="fw-semibold mb-0">Cargando movimientos...</span>
+  <div class="status-banner status-banner--info" *ngIf="estadoMovimientos === 'cargando'">
+    <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+    <span>Cargando movimientos...</span>
   </div>
 
-  <div class="alert alert-danger" *ngIf="estadoMovimientos === 'error'">
-    <span class="fw-semibold d-block mb-1">Ups...</span>
-    <span class="mb-0">No pudimos cargar los movimientos. Intenta nuevamente.</span>
+  <div class="status-banner status-banner--error" *ngIf="estadoMovimientos === 'error'">
+    <i class="bi bi-wifi-off"></i>
+    <div>
+      <strong>Ups...</strong>
+      <p class="mb-0">No pudimos cargar los movimientos. Intenta nuevamente.</p>
+    </div>
   </div>
 
-  <div class="alert alert-secondary" *ngIf="estadoMovimientos === 'listo' && !hayMovimientos">
-    <span class="mb-0">No hay movimientos registrados con los filtros aplicados.</span>
+  <div class="status-banner status-banner--muted" *ngIf="estadoMovimientos === 'listo' && !hayMovimientos">
+    <i class="bi bi-inboxes"></i>
+    <span>No hay movimientos registrados con los filtros aplicados.</span>
   </div>
 
-  <div class="table-responsive" *ngIf="estadoMovimientos === 'listo' && hayMovimientos">
-    <table class="table table-striped table-hover align-middle mb-0">
-      <thead class="table-light text-uppercase text-muted small">
-        <tr>
-          <th>Origen</th>
-          <th>Descripción</th>
-          <th class="text-end">Monto</th>
-          <th>Tipo</th>
-          <th>Registrado por</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let movimiento of movimientos">
-          <td>
-            <span class="badge text-bg-light text-uppercase">{{ origenLegible(movimiento.origen) }}</span>
-          </td>
-          <td>
-            <div class="fw-semibold mb-0">{{ movimiento.descripcion || 'Sin descripción' }}</div>
-          </td>
-          <td class="text-end">
-            <div class="fw-semibold" [ngClass]="montoClase(movimiento.origen)">
-              {{ movimiento.monto | currency:'COP':'symbol-narrow':'1.0-0' }}
-            </div>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="movimiento.esCredito ? 'text-bg-warning' : 'text-bg-success'">
-              {{ movimiento.esCredito ? 'Crédito' : 'Contado' }}
-            </span>
-          </td>
-          <td>
-            <div class="fw-semibold">{{ movimiento.usuarioNombre }}</div>
-            <div class="text-muted small">ID: {{ movimiento.usuarioId }}</div>
-          </td>
-          <td>
-            <div>{{ movimiento.creadoEn | date:'shortDate' }}</div>
-            <small class="text-muted">{{ movimiento.creadoEn | date:'shortTime' }}</small>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="surface-panel table-panel" *ngIf="estadoMovimientos === 'listo' && hayMovimientos">
+    <div
+      class="table-responsive dashboard-table__wrapper"
+      (scroll)="onTablaScroll($event)"
+      [class.dashboard-table__wrapper--scrolled]="tablaScrollActiva"
+    >
+      <table class="table dashboard-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Origen</th>
+            <th>Descripción</th>
+            <th class="text-end">Monto</th>
+            <th>Tipo</th>
+            <th>Registrado por</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let movimiento of movimientos">
+            <td>
+              <span class="badge origin-pill text-uppercase">{{ origenLegible(movimiento.origen) }}</span>
+            </td>
+            <td>
+              <div class="fw-semibold mb-0">{{ movimiento.descripcion || 'Sin descripción' }}</div>
+            </td>
+            <td class="text-end">
+              <div class="fw-semibold" [ngClass]="montoClase(movimiento.origen)">
+                {{ movimiento.monto | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="movimiento.esCredito ? 'text-bg-warning' : 'text-bg-success'">
+                {{ movimiento.esCredito ? 'Crédito' : 'Contado' }}
+              </span>
+            </td>
+            <td>
+              <div class="fw-semibold">{{ movimiento.usuarioNombre }}</div>
+              <div class="text-muted small">ID: {{ movimiento.usuarioId }}</div>
+            </td>
+            <td>
+              <div>{{ movimiento.creadoEn | date:'shortDate' }}</div>
+              <small class="text-muted">{{ movimiento.creadoEn | date:'shortTime' }}</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <nav
-    class="d-flex justify-content-end mt-3"
+    class="dashboard-pagination"
     *ngIf="estadoMovimientos === 'listo' && mostrarPaginador"
     aria-label="Paginación de movimientos"
   >

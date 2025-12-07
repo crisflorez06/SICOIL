@@ -1,23 +1,32 @@
-<h2 mat-dialog-title class="h5 mb-2">Editar producto</h2>
-<div mat-dialog-content>
-  <form [formGroup]="formulario" class="d-flex flex-column gap-3">
-    <mat-form-field appearance="outline">
-      <mat-label>Nombre</mat-label>
-      <input matInput formControlName="nombre" class="text-uppercase" />
-      <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
-      <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
-    </mat-form-field>
+<section class="inventory-dialog">
+  <header class="dialog-header">
+    <div class="dialog-icon">
+      <i class="bi bi-pencil-square"></i>
+    </div>
+    <div>
+      <h2 mat-dialog-title class="dialog-title">Editar producto</h2>
+      <p class="dialog-subtitle">Actualiza el nombre o la capacidad de cajas cuando cambie la presentación.</p>
+    </div>
+  </header>
+  <div mat-dialog-content class="dialog-content">
+    <form [formGroup]="formulario" class="d-flex flex-column gap-3">
+      <mat-form-field appearance="outline">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre" class="text-uppercase" />
+        <mat-error *ngIf="formulario.get('nombre')?.hasError('required')">Este campo es obligatorio.</mat-error>
+        <mat-error *ngIf="formulario.get('nombre')?.hasError('maxlength')">Máximo 120 caracteres.</mat-error>
+      </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Cantidad por caja</mat-label>
-      <input matInput type="number" min="1" step="1" formControlName="cantidadPorCajas" />
-      <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('required')">Este campo es obligatorio.</mat-error>
-      <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('min')">Debe ser al menos 1.</mat-error>
-    </mat-form-field>
-
-  </form>
-</div>
-<div mat-dialog-actions class="d-flex justify-content-end gap-2 mt-3">
-  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" (click)="guardar()">Guardar</button>
-</div>
+      <mat-form-field appearance="outline">
+        <mat-label>Cantidad por caja</mat-label>
+        <input matInput type="number" min="1" step="1" formControlName="cantidadPorCajas" />
+        <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('required')">Este campo es obligatorio.</mat-error>
+        <mat-error *ngIf="formulario.get('cantidadPorCajas')?.hasError('min')">Debe ser al menos 1.</mat-error>
+      </mat-form-field>
+    </form>
+  </div>
+  <div mat-dialog-actions class="dialog-actions">
+    <button type="button" class="dialog-btn dialog-btn--ghost" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="dialog-btn dialog-btn--primary" (click)="guardar()">Guardar</button>
+  </div>
+</section>

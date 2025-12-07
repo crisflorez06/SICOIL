@@ -1,116 +1,155 @@
-<section class="card border-0 shadow-sm p-4">
-  <header class="d-flex flex-column gap-3 mb-4">
-    <p class="form-label fw-semibold mb-0">Filtros de búsqueda</p>
-    <div class="row g-2">
-      <div class="col-12 col-md-6 col-lg-4">
-        <label class="form-label small mb-1" for="filtro-nombre-producto">Producto</label>
-        <input
-          type="text"
-          id="filtro-nombre-producto"
-          class="form-control form-control-sm"
-          placeholder="Nombre del producto"
-          [(ngModel)]="filtroNombreProducto"
-          (keyup.enter)="aplicarFiltros()"
-        />
-      </div>
-      <div class="col-12 col-md-4 col-lg-2">
-        <label class="form-label small mb-1" for="filtro-tipo">Tipo</label>
-        <select class="form-select form-select-sm" id="filtro-tipo" [(ngModel)]="filtroTipo">
-          <option value="">Todos</option>
-          <option value="ENTRADA">Entrada</option>
-          <option value="SALIDA">Salida</option>
-          <option value="VENTA">Venta</option>
-        </select>
-      </div>
-      <div class="col-12 col-md-4 col-lg-3">
-        <label class="form-label small mb-1" for="filtro-desde">Desde</label>
-        <input id="filtro-desde" type="date" class="form-control form-control-sm" [(ngModel)]="filtroDesde" />
-      </div>
-      <div class="col-12 col-md-4 col-lg-3">
-        <label class="form-label small mb-1" for="filtro-hasta">Hasta</label>
-        <input id="filtro-hasta" type="date" class="form-control form-control-sm" [(ngModel)]="filtroHasta" />
+<section class="kardex-shell">
+  <div class="kardex-hero glass-panel">
+    <div class="hero-copy">
+      <p class="hero-kicker text-uppercase">Movimientos</p>
+      <h1 class="hero-title">Kardex de inventario</h1>
+      <p class="hero-lede">Monitorea entradas, salidas y ventas en un panel alineado con el resto de SICOIL.</p>
+      <div class="hero-metrics">
+        <div class="metric-chip">
+          <span>En esta vista</span>
+          <strong>{{ movimientos.length }}</strong>
+        </div>
+        <div class="metric-chip">
+          <span>Total filtrados</span>
+          <strong>{{ totalElementos }}</strong>
+        </div>
+        <div class="metric-chip">
+          <span>Filtro activo</span>
+          <strong>{{ filtroTipo || 'Todos los tipos' }}</strong>
+        </div>
       </div>
     </div>
-    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
-      <button
-        type="button"
-        class="btn btn-primary btn-sm d-flex align-items-center justify-content-center gap-2"
-        (click)="aplicarFiltros()"
-      >
-        <i class="bi bi-search"></i>
-        <span>Buscar</span>
-      </button>
-      <button
-        type="button"
-        class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center gap-2"
-        (click)="limpiarFiltros()"
-      >
-        <i class="bi bi-arrow-counterclockwise"></i>
-        <span>Reiniciar</span>
-      </button>
+
+    <form class="kardex-filters" novalidate (ngSubmit)="aplicarFiltros()">
+      <div class="filter-grid">
+        <div class="filter-control">
+          <label class="form-label" for="filtro-nombre-producto">Producto</label>
+          <input
+            type="text"
+            id="filtro-nombre-producto"
+            class="form-control"
+            placeholder="Nombre o referencia"
+            [(ngModel)]="filtroNombreProducto"
+            name="filtroNombreProducto"
+          />
+        </div>
+        <div class="filter-control">
+          <label class="form-label" for="filtro-tipo">Tipo</label>
+          <select id="filtro-tipo" class="form-select" [(ngModel)]="filtroTipo" name="filtroTipo">
+            <option value="">Todos</option>
+            <option value="ENTRADA">Entrada</option>
+            <option value="SALIDA">Salida</option>
+            <option value="VENTA">Venta</option>
+          </select>
+        </div>
+        <div class="filter-control">
+          <label class="form-label" for="filtro-desde">Desde</label>
+          <input
+            id="filtro-desde"
+            type="date"
+            class="form-control"
+            [(ngModel)]="filtroDesde"
+            name="filtroDesde"
+          />
+        </div>
+        <div class="filter-control">
+          <label class="form-label" for="filtro-hasta">Hasta</label>
+          <input id="filtro-hasta" type="date" class="form-control" [(ngModel)]="filtroHasta" name="filtroHasta" />
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2">
+          <i class="bi bi-search"></i>
+          <span>Buscar</span>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-light d-inline-flex align-items-center gap-2"
+          (click)="limpiarFiltros()"
+        >
+          <i class="bi bi-arrow-counterclockwise"></i>
+          <span>Reiniciar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="status-banner status-banner--info" *ngIf="estado === 'cargando'">
+    <div class="spinner-border spinner-border-sm" role="status"></div>
+    <span>Cargando movimientos...</span>
+  </div>
+
+  <div class="status-banner status-banner--error" *ngIf="estado === 'error'">
+    <i class="bi bi-wifi-off"></i>
+    <div>
+      <strong>Ups...</strong>
+      <p class="mb-0">No pudimos cargar los movimientos del kardex. Intenta nuevamente.</p>
     </div>
-  </header>
-
-  <div class="alert alert-primary d-flex align-items-center gap-2" *ngIf="estado === 'cargando'">
-    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-    <span class="fw-semibold mb-0">Cargando movimientos...</span>
   </div>
 
-  <div class="alert alert-danger" *ngIf="estado === 'error'">
-    <span class="fw-semibold d-block mb-1">Error al cargar.</span>
-    <span class="mb-0">No pudimos obtener los movimientos del kardex. Intenta nuevamente.</span>
+  <div class="status-banner status-banner--muted" *ngIf="estado === 'listo' && !hayMovimientos">
+    <i class="bi bi-inboxes"></i>
+    <span>No encontramos movimientos con los filtros aplicados.</span>
   </div>
 
-  <div class="alert alert-secondary" *ngIf="estado === 'listo' && !hayMovimientos">
-    <span class="mb-0">No hay movimientos para los filtros aplicados.</span>
-  </div>
-
-  <div class="table-responsive" *ngIf="estado === 'listo' && hayMovimientos">
-    <table class="table table-striped table-hover align-middle mb-0">
-      <thead class="table-light text-uppercase text-muted small">
-        <tr>
-          <th scope="col">Producto</th>
-          <th scope="col">Tipo</th>
-          <th scope="col" class="text-end">Cantidad</th>
-          <th scope="col">Usuario</th>
-          <th scope="col">Comentario</th>
-          <th scope="col" class="text-end">Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let movimiento of movimientos">
-          <td>
-            <div class="fw-semibold text-uppercase">{{ movimiento.productoNombre }}</div>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="{
-                'text-bg-success-subtle text-success': movimiento.tipo === 'ENTRADA',
-                'text-bg-danger-subtle text-danger': movimiento.tipo === 'SALIDA',
-                'text-bg-warning-subtle text-warning': movimiento.tipo === 'VENTA'
-              }">
-              {{ movimiento.tipo }}
-            </span>
-          </td>
-          <td class="text-end fw-semibold">
-            {{ movimiento.tipo === 'ENTRADA' ? '+' : movimiento.tipo === 'SALIDA' ? '-' : '' }}{{ movimiento.cantidad }}
-          </td>
-          <td>
-            <div class="fw-semibold">{{ movimiento.usuarioNombre }}</div>
-          </td>
-          <td>
-            {{ movimiento.tipo === 'SALIDA' ? (movimiento.comentario || 'Sin comentario') : '—' }}
-          </td>
-          <td class="text-end">
-            <div class="fw-semibold">{{ movimiento.fechaRegistro | date: 'mediumDate' }}</div>
-            <small class="text-muted">{{ movimiento.fechaRegistro | date: 'shortTime' }}</small>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="surface-panel table-panel" *ngIf="estado === 'listo' && hayMovimientos">
+    <div
+      class="table-responsive kardex-table__wrapper"
+      (scroll)="onTablaScroll($event)"
+      [class.kardex-table__wrapper--scrolled]="tablaScrollActiva"
+    >
+      <table class="table kardex-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Tipo</th>
+            <th class="text-end">Cantidad</th>
+            <th>Usuario</th>
+            <th>Comentario</th>
+            <th class="text-end">Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let movimiento of movimientos">
+            <td>
+              <div class="movement-product">
+                <p class="movement-product__name">{{ movimiento.productoNombre }}</p>
+              </div>
+            </td>
+            <td>
+              <span class="movement-chip" [ngClass]="movimientoChipClase(movimiento.tipo)">
+                {{ movimiento.tipo }}
+              </span>
+            </td>
+            <td class="text-end">
+              <span class="movement-qty" [ngClass]="movimientoCantidadClase(movimiento.tipo)">
+                {{ cantidadPrefijo(movimiento.tipo) }}{{ movimiento.cantidad }}
+              </span>
+            </td>
+            <td>
+              <div class="movement-user">
+                <p class="movement-user__name">{{ movimiento.usuarioNombre }}</p>
+              </div>
+            </td>
+            <td>
+              <p class="movement-comment">
+                {{ movimiento.tipo === 'SALIDA' ? (movimiento.comentario || 'Sin comentario registrado') : '—' }}
+              </p>
+            </td>
+            <td class="text-end">
+              <div class="movement-date">
+                <span>{{ movimiento.fechaRegistro | date:'mediumDate' }}</span>
+                <small class="text-muted">{{ movimiento.fechaRegistro | date:'shortTime' }}</small>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <nav
-    class="d-flex justify-content-end mt-3"
+    class="kardex-pagination"
     *ngIf="estado === 'listo' && mostrarPaginador"
     aria-label="Paginación de movimientos"
   >
@@ -126,7 +165,12 @@
         </button>
       </li>
       <li class="page-item" [class.disabled]="paginaActual === totalPaginas - 1">
-        <button class="page-link" type="button" (click)="cambiarPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas - 1">
+        <button
+          class="page-link"
+          type="button"
+          (click)="cambiarPagina(paginaActual + 1)"
+          [disabled]="paginaActual === totalPaginas - 1"
+        >
           Siguiente
         </button>
       </li>
