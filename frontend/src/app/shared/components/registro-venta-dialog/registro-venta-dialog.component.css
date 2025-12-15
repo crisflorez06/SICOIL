@@ -150,6 +150,19 @@
   grid-column: 1 / -1;
 }
 
+.venta-form-row {
+  display: grid;
+  grid-template-columns: minmax(320px, 2.25fr) minmax(140px, 1fr) minmax(120px, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.venta-form-row__producto,
+.venta-form-row__total,
+.venta-form-row__cantidad {
+  width: 100%;
+}
+
 .modo-venta-toggle {
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.08);
@@ -217,5 +230,9 @@ mat-form-field {
   .modo-venta-toggle {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .venta-form-row {
+    grid-template-columns: 1fr;
   }
 }

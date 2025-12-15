@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { finalize } from 'rxjs';
@@ -181,8 +182,17 @@ export class VentasComponent implements OnInit {
     return this.filasExpandida.has(index);
   }
 
-  calcularGananciaItem(item: { precioCompra: number; precioVenta: number }): number {
-    return Number(item.precioVenta ?? 0) - Number(item.precioCompra ?? 0);
+  calcularGananciaItem(item: { precioCompra: number; precioVenta: number; cantidad: number }): number {
+    const totalVenta = Number(item.precioVenta ?? 0);
+    const totalCosto = Number(item.precioCompra ?? 0) * Number(item.cantidad ?? 0);
+    return totalVenta - totalCosto;
+  }
+
+  calcularGananciaVenta(venta: VentaListadoResponse): number {
+    if (!venta.items?.length) {
+      return 0;
+    }
+    return venta.items.reduce((total, item) => total + this.calcularGananciaItem(item), 0);
   }
 
   estaAnulandoVenta(ventaId: number): boolean {
@@ -225,6 +235,9 @@ export class VentasComponent implements OnInit {
             this.cargarVentas(this.paginaActual);
           },
           error: (error) => {
+            if (this.mostrarMensajeBadRequest(error)) {
+              return;
+            }
             this.apiErrorService.handle(error, { contextMessage: 'No se pudo anular la venta.' });
           },
         });
@@ -264,5 +277,49 @@ export class VentasComponent implements OnInit {
   onTablaScroll(event: Event): void {
     const target = event.target as HTMLElement | null;
     this.tablaScrollActiva = !!target && target.scrollTop > 0;
+  }
+
+  private mostrarMensajeBadRequest(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) {
+      return false;
+    }
+    const mensaje = this.extraerMensaje(error.error);
+    if (!mensaje) {
+      return false;
+    }
+
+    const mensajeNormalizado = mensaje.toLowerCase();
+    if (mensajeNormalizado.includes('abono')) {
+      this.mensajeService.error('No se puede eliminar una venta con abonos registrados.');
+      return true;
+    }
+
+    if (error.status === 400) {
+      this.mensajeService.error(mensaje);
+      return true;
+    }
+    return false;
+  }
+
+  private extraerMensaje(payload: unknown): string | null {
+    if (!payload) {
+      return null;
+    }
+    if (typeof payload === 'string') {
+      try {
+        const parsed = JSON.parse(payload);
+        return this.extraerMensaje(parsed);
+      } catch {
+        return payload.trim().length > 0 ? payload.trim() : null;
+      }
+    }
+    if (typeof payload === 'object') {
+      const data = payload as Record<string, unknown>;
+      const candidate = data['message'] ?? data['mensaje'] ?? data['error'] ?? data['detail'];
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+    return null;
   }
 }

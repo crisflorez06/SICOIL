@@ -6,25 +6,18 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { VentaRequest } from '../../../models/venta.model';
 import { VentaService } from '../../../services/venta.service';
-import {
-  FiltroClienteResponse,
-  FiltroProductoPrecio,
-  FiltroProductoResponse,
-} from '../../../models/filtros.model';
+import { FiltroClienteResponse, FiltroProductoResponse } from '../../../models/filtros.model';
 import { MensajeService } from '../../../services/mensaje.service';
 import { Subject } from 'rxjs';
 import { debounceTime, startWith, takeUntil } from 'rxjs/operators';
 
 type ItemVentaRegistrado = {
   productoNombre: string;
-  precioId: number;
   precioVenta: number;
   cantidad: number;
-  costoUnitario: number;
   subtotal: number;
 };
 
@@ -39,7 +32,6 @@ type ItemVentaRegistrado = {
     MatFormFieldModule,
     MatInputModule,
     MatButtonToggleModule,
-    MatSelectModule,
     MatAutocompleteModule,
   ],
   templateUrl: './registro-venta-dialog.component.html',
@@ -68,7 +60,6 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
 
   readonly itemForm = this.fb.group({
     productoNombre: [null as string | null, Validators.required],
-    precioId: [null as number | null, Validators.required],
     precioVenta: [null as number | null, [Validators.required, Validators.min(0.01)]],
     cantidad: [1, [Validators.required, Validators.min(1)]],
   });
@@ -89,18 +80,13 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
     return this.itemsRegistrados.reduce((total, item) => total + item.subtotal, 0);
   }
 
-  get preciosDisponiblesActuales(): FiltroProductoPrecio[] {
-    const nombre = (this.itemForm.get('productoNombre')?.value as string | null) ?? null;
-    return this.preciosPorProducto(nombre);
-  }
-
   agregarItemALista(): void {
     if (this.itemForm.invalid) {
       this.itemForm.markAllAsTouched();
       return;
     }
     const raw = this.itemForm.getRawValue();
-    if (!raw || raw.productoNombre == null || raw.precioId == null || raw.precioVenta == null) {
+    if (!raw || raw.productoNombre == null || raw.precioVenta == null) {
       return;
     }
 
@@ -112,17 +98,8 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const precioSeleccionado = this.buscarPrecio(raw.productoNombre, raw.precioId);
-    if (!precioSeleccionado) {
-      this.itemForm.get('precioId')?.setErrors({ required: true });
-      this.mensajeService.error('Debes seleccionar un precio disponible.');
-      return;
-    }
-
-    const cantidadDisponible = Number(precioSeleccionado.cantidad ?? 0);
-    const cantidadReservada = this.itemsRegistrados
-      .filter((item) => item.precioId === raw.precioId)
-      .reduce((total, item) => total + item.cantidad, 0);
+    const cantidadDisponible = this.stockDisponiblePorProducto(raw.productoNombre);
+    const cantidadReservada = this.cantidadReservadaEnLista(raw.productoNombre);
     const stockRestante = cantidadDisponible - cantidadReservada;
 
     if (stockRestante <= 0) {
@@ -140,23 +117,19 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const precio = Number(raw.precioVenta ?? 0);
-    const subtotal = precio;
-    const costoUnitario = Number(precioSeleccionado.precioCompra ?? 0);
+    const precioUnitario = Number(raw.precioVenta ?? 0);
+    const subtotal = precioUnitario * cantidad;
     this.itemsRegistrados = [
       ...this.itemsRegistrados,
       {
         productoNombre: raw.productoNombre,
-        precioId: raw.precioId,
-        precioVenta: precio,
+        precioVenta: precioUnitario,
         cantidad,
-        costoUnitario,
         subtotal,
       },
     ];
     this.itemForm.reset({
       productoNombre: null,
-      precioId: null,
       precioVenta: null,
       cantidad: 1,
     });
@@ -169,26 +142,11 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
   cambioProducto(): void {
     this.itemForm.patchValue(
       {
-        precioId: null,
         precioVenta: null,
       },
       { emitEvent: false },
     );
-  }
-
-  cambioPrecio(): void {
-    const nombreProducto = this.itemForm.get('productoNombre')?.value as string | null;
-    const precioId = this.itemForm.get('precioId')?.value as number | null;
-    const precio = this.buscarPrecio(nombreProducto, precioId);
-    this.itemForm.get('precioVenta')?.setValue(precio?.precioCompra ?? null);
-  }
-
-  preciosPorProducto(nombreProducto: string | null): FiltroProductoPrecio[] {
-    return (
-      this.buscarProductoPorNombre(nombreProducto)?.precios.filter(
-        (precio) => Number(precio.cantidad ?? 0) > 0,
-      ) ?? []
-    );
+    this.limpiarErrorStockCantidad();
   }
 
   cancelar(): void {
@@ -212,9 +170,9 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
       return;
     }
     const items = this.itemsRegistrados.map((item) => ({
-      productoId: item.precioId,
+      nombreProducto: item.productoNombre,
       cantidad: item.cantidad,
-      subtotal: item.subtotal,
+      subtotal: item.precioVenta,
     }));
 
     const resultado: VentaRequest = {
@@ -250,14 +208,6 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
         this.cargandoFiltros = false;
       },
     });
-  }
-
-  private buscarPrecio(nombreProducto: string | null, precioId: number | null): FiltroProductoPrecio | undefined {
-    if (!nombreProducto || precioId == null) {
-      return undefined;
-    }
-    const producto = this.buscarProductoPorNombre(nombreProducto);
-    return producto?.precios.find((precio) => precio.id === precioId);
   }
 
   private configurarAutocompletados(): void {
@@ -350,5 +300,37 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
     return this.productosDisponibles.find(
       (producto) => producto.nombreProducto.toLocaleLowerCase() === termino,
     );
+  }
+
+  private stockDisponiblePorProducto(nombreProducto: string | null): number {
+    const producto = this.buscarProductoPorNombre(nombreProducto);
+    if (!producto) {
+      return 0;
+    }
+    return (producto.precios ?? []).reduce((total, precio) => total + Number(precio.cantidad ?? 0), 0);
+  }
+
+  private cantidadReservadaEnLista(nombreProducto: string): number {
+    const termino = nombreProducto.trim().toLocaleLowerCase();
+    return this.itemsRegistrados
+      .filter((item) => item.productoNombre.trim().toLocaleLowerCase() === termino)
+      .reduce((total, item) => total + item.cantidad, 0);
+  }
+
+  private limpiarErrorStockCantidad(): void {
+    const cantidadControl = this.itemForm.get('cantidad');
+    if (!cantidadControl) {
+      return;
+    }
+    const erroresActuales = cantidadControl.errors;
+    if (!erroresActuales || !erroresActuales['stockInsuficiente']) {
+      return;
+    }
+    const { stockInsuficiente, ...restoErrores } = erroresActuales;
+    const nuevosErrores = Object.keys(restoErrores).length ? restoErrores : null;
+    cantidadControl.setErrors(nuevosErrores);
+    if (!nuevosErrores) {
+      cantidadControl.updateValueAndValidity({ emitEvent: false });
+    }
   }
 }

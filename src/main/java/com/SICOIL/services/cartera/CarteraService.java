@@ -136,7 +136,8 @@ public class CarteraService {
                 clienteId,
                 EnumSet.of(CarteraMovimientoTipo.ABONO, CarteraMovimientoTipo.AJUSTE),
                 desde,
-                hasta
+                hasta,
+                null
         );
 
         List<CarteraAbonoDetalleResponse> respuestas = new ArrayList<>();
@@ -179,7 +180,8 @@ public class CarteraService {
                 clienteId,
                 EnumSet.of(CarteraMovimientoTipo.CREDITO),
                 desde,
-                hasta
+                hasta,
+                Boolean.TRUE
         );
         return movimientos.stream()
                 .map(carteraMovimientoMapper::toCreditoResponse)
@@ -280,6 +282,13 @@ public class CarteraService {
             registrarMovimiento(cartera, CarteraMovimientoTipo.AJUSTE, saldoAnterior, usuario, observacion);
             log.info("Cartera ajustada a 0 por anulación de la venta {}", venta.getId());
         });
+    }
+
+    public boolean ventaTieneAbonos(Long ventaId) {
+        if (ventaId == null) {
+            return false;
+        }
+        return carteraMovimientoRepository.existsByCarteraVentaIdAndTipo(ventaId, CarteraMovimientoTipo.ABONO);
     }
 
 
@@ -448,7 +457,8 @@ public class CarteraService {
     private List<CarteraMovimiento> obtenerMovimientos(Long clienteId,
                                                        Set<CarteraMovimientoTipo> tipos,
                                                        LocalDate desde,
-                                                       LocalDate hasta) {
+                                                       LocalDate hasta,
+                                                       Boolean ventaActiva) {
         if (clienteId == null) {
             throw new IllegalArgumentException("Debe indicar el cliente para consultar la cartera.");
         }
@@ -456,7 +466,8 @@ public class CarteraService {
         Specification<CarteraMovimiento> spec = Specification
                 .where(CarteraMovimientoSpecification.clienteIdEquals(clienteId))
                 .and(CarteraMovimientoSpecification.tipoIn(tipos))
-                .and(CarteraMovimientoSpecification.fechaBetween(desde, hasta));
+                .and(CarteraMovimientoSpecification.fechaBetween(desde, hasta))
+                .and(CarteraMovimientoSpecification.ventaActivaEquals(ventaActiva));
 
         return carteraMovimientoRepository.findAll(spec, Sort.by(Sort.Direction.DESC, "fecha"));
     }
@@ -489,14 +500,21 @@ public class CarteraService {
 
     private String construirObservacionAbono(String observacionBase, Cartera cartera) {
         StringBuilder builder = new StringBuilder();
-        if (observacionBase != null && !observacionBase.isBlank()) {
+        boolean tieneObservacionBase = observacionBase != null && !observacionBase.isBlank();
+        if (tieneObservacionBase) {
             builder.append(observacionBase.trim());
+        }
+        if (!tieneObservacionBase && cartera.getCliente() != null && cartera.getCliente().getNombre() != null) {
+            builder.append("Abono realizado por el cliente ").append(cartera.getCliente().getNombre());
         }
         if (cartera.getVenta() != null) {
             if (builder.length() > 0) {
                 builder.append(" - ");
             }
             builder.append("Venta ").append(cartera.getVenta().getId());
+        }
+        if (builder.length() == 0 && cartera.getCliente() != null && cartera.getCliente().getNombre() != null) {
+            builder.append("Abono realizado por el cliente ").append(cartera.getCliente().getNombre());
         }
         return builder.length() > 0 ? builder.toString() : null;
     }

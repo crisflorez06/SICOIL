@@ -42,6 +42,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
     nombreProducto: ['', Validators.required],
     precioCompra: [null as number | null, [Validators.required, Validators.min(0.01)]],
     cantidad: [null as number | null, [Validators.required, Validators.min(1)]],
+    comentario: ['', [Validators.maxLength(250)]],
   });
 
   productosRegistrados: IngresoProductoListaEntry[] = [];
@@ -125,6 +126,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       nombreProducto: payload.nombreProducto ?? '',
       precioCompra: payload.precioCompra ?? 0,
       cantidad: payload.cantidad ?? 0,
+      comentario: payload.comentario?.trim() || undefined,
     };
     this.productosRegistrados = [
       ...this.productosRegistrados,
@@ -134,6 +136,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       nombreProducto: '',
       precioCompra: null,
       cantidad: null,
+      comentario: '',
     });
     this.nombreInvalido = false;
   }
@@ -155,6 +158,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       nombreProducto: item.nombreProducto,
       precioCompra: item.precioCompra,
       cantidad: item.cantidad,
+      comentario: item.comentario,
     }));
     this.dialogRef.close(soloRequests);
   }

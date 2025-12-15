@@ -1,17 +1,18 @@
 package com.SICOIL.services.venta;
 
 import com.SICOIL.dtos.venta.PaginaVentaResponse;
-import com.SICOIL.dtos.venta.VentaAnulacionRequest;
 import com.SICOIL.dtos.venta.VentaListadoResponse;
 import com.SICOIL.dtos.venta.VentaRequest;
 import com.SICOIL.dtos.venta.VentaResponse;
 import com.SICOIL.mappers.venta.VentaMapper;
 import com.SICOIL.models.*;
+import com.SICOIL.repositories.ProductoRepository;
 import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.InventarioService;
 import com.SICOIL.services.capital.CapitalService;
 import com.SICOIL.services.cartera.CarteraService;
 import com.SICOIL.services.cliente.ClienteService;
+import com.SICOIL.services.kardex.KardexService;
 import com.SICOIL.services.producto.ProductoService;
 import com.SICOIL.services.usuario.UsuarioService;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,7 +34,9 @@ import org.springframework.http.HttpStatus;
 public class VentaService {
 
     private final VentaRepository ventaRepository;
+    private final ProductoRepository productoRepository;
     private final ProductoService productoService;
+    private final KardexService kardexService;
     private final UsuarioService usuarioService;
     private final ClienteService clienteService;
     private final VentaMapper ventaMapper;
@@ -145,7 +148,7 @@ public class VentaService {
 
         Cliente cliente = clienteService.buscarPorId(request.getClienteId());
 
-        Venta venta = ventaMapper.requestToEntity(request, usuario, cliente, productoService::buscarPorId);
+        Venta venta = ventaMapper.requestToEntity(request, usuario, cliente);
 
         Venta guardada = ventaRepository.save(venta);
         log.info("Venta {} persistida, ajustando inventario", guardada.getId());
@@ -199,6 +202,10 @@ public class VentaService {
         if (!venta.isActiva()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La venta ya se encuentra anulada.");
         }
+        if (carteraService.ventaTieneAbonos(ventaId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La venta no puede anularse porque tiene abonos registrados.");
+        }
 
         log.info("Revirtiendo inventario para venta {}", ventaId);
         revertirInventarioPorAnulacion(venta);
@@ -232,23 +239,62 @@ public class VentaService {
     }
 
     private void ajustarInventarioPorVenta(Venta venta) {
+
         if (venta.getDetalles() == null) {
             return;
         }
+
         for (DetalleVenta detalle : venta.getDetalles()) {
-            if (detalle == null) {
+
+            if (detalle == null || detalle.getCantidad() == null || detalle.getCantidad() <= 0) {
                 continue;
             }
-            Producto producto = detalle.getProducto();
+
+            // Ahora usamos el NOMBRE del producto para FIFO
+            String nombreProducto = detalle.getProducto().getNombre();
             Integer cantidad = detalle.getCantidad();
-            if (producto == null || producto.getId() == null || cantidad == null || cantidad <= 0) {
-                continue;
+
+            // 1. Buscar todos los productos con ese nombre (simulación de LOTES)
+            List<Producto> lotes = productoRepository.findByNombreOrderByFechaRegistroAsc(nombreProducto);
+
+            if (lotes.isEmpty()) {
+                throw new IllegalArgumentException("No existen lotes para el producto: " + nombreProducto);
             }
-            String observacion = String.format("Venta #%d", venta.getId());
-            log.debug("Registrando salida inventario por venta {} producto {} cantidad {}", venta.getId(), producto.getId(), cantidad);
-            inventarioService.registrarSalida(producto.getId(), cantidad, observacion, MovimientoTipo.VENTA);
+
+            int restante = cantidad;
+
+            for (Producto lote : lotes) {
+
+                if (restante <= 0) break;
+
+                int disponible = lote.getStock() != null ? lote.getStock() : 0;
+                if (disponible <= 0) continue;
+
+                int aDescontar = Math.min(disponible, restante);
+
+                // 2. Descontar FIFO
+                lote.setStock(disponible - aDescontar);
+                productoRepository.save(lote);
+
+                // 3. Registrar Kardex indicando desde qué lote se descontó
+                kardexService.registrarMovimiento(
+                        lote,
+                        aDescontar,
+                        "Venta #" + venta.getId() + " - desde lote " + lote.getId(),
+                        MovimientoTipo.SALIDA
+                );
+
+                restante -= aDescontar;
+            }
+
+            if (restante > 0) {
+                throw new IllegalArgumentException(
+                        "Stock insuficiente para completar la venta del producto: " + nombreProducto
+                );
+            }
         }
     }
+
 
     private void revertirInventarioPorAnulacion(Venta venta) {
         if (venta.getDetalles() == null) {

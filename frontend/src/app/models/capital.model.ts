@@ -1,4 +1,4 @@
-export type CapitalOrigen = 'VENTA' | 'COMPRA' | 'INYECCION';
+export type CapitalOrigen = 'VENTA' | 'COMPRA' | 'INYECCION' | 'RETIROGANANCIA' | 'ABONO';
 
 export interface CapitalMovimientoResponse {
   id: number;
@@ -21,10 +21,12 @@ export interface CapitalResumenResponse {
   capitalNeto: number;
   totalGanancias: number;
   totalAbonos: number;
+  totalInventario: number;
   totalUnidadesVendidas: number;
   totalCajasVendidas: number;
   topProductos: CapitalTopProducto[];
   topClientes: CapitalTopCliente[];
+  ventasMensuales: CapitalVentaMensual[];
 }
 
 export interface CapitalTopProducto {
@@ -41,6 +43,11 @@ export interface CapitalTopCliente {
   totalVentas: number;
   montoComprado: number;
   participacionPorcentaje: number;
+}
+
+export interface CapitalVentaMensual {
+  mes: string;
+  total: number;
 }
 
 export interface CapitalInyeccionRequest {

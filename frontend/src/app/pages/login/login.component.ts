@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 
@@ -56,9 +57,13 @@ export class LoginComponent implements OnInit {
           this.router.navigateByUrl('/capital');
         },
         error: (error) => {
+          const contextMessage =
+            error instanceof HttpErrorResponse && (error.status === 0 || error.status >= 500)
+              ? 'Error en el servidor. Intenta más tarde.'
+              : 'Usuario o contraseña incorrectos.';
           this.apiErrorService.handle(error, {
             form: this.formulario,
-            contextMessage: 'Usuario o contraseña incorrectos.',
+            contextMessage,
           });
         },
       });

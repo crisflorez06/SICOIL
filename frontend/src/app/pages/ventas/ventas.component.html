@@ -142,6 +142,7 @@
       <table class="table ventas-table align-middle mb-0">
         <thead>
           <tr>
+            <th class="text-center">ID</th>
             <th>Cliente</th>
             <th class="text-end">Total</th>
             <th>Tipo</th>
@@ -155,6 +156,9 @@
         <tbody>
           <ng-container *ngFor="let venta of ventas; let i = index">
             <tr>
+              <td class="text-center">
+                <span class="venta-id">{{ venta.ventaId }}</span>
+              </td>
               <td>
                 <div class="venta-client">
                   <p class="venta-client__name">{{ venta.clienteNombre }}</p>
@@ -165,6 +169,9 @@
               </td>
               <td class="text-end">
                 <span class="venta-amount">{{ venta.totalVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+                <small class="text-muted d-block">
+                  Ganancia: {{ calcularGananciaVenta(venta) | currency:'COP':'symbol-narrow':'1.0-0' }}
+                </small>
               </td>
               <td>
                 <span
@@ -257,9 +264,9 @@
                         <thead>
                           <tr>
                             <th>Producto</th>
-                            <th class="text-end">Precio compra</th>
-                            <th class="text-end">Precio venta</th>
+                            <th class="text-end">Precio compra unidad</th>
                             <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio venta total</th>
                             <th class="text-end">Ganancia</th>
                           </tr>
                         </thead>
@@ -267,8 +274,8 @@
                           <tr *ngFor="let item of venta.items">
                             <td class="text-uppercase">{{ item.productoNombre }}</td>
                             <td class="text-end">{{ item.precioCompra | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
-                            <td class="text-end">{{ item.precioVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                             <td class="text-end">{{ item.cantidad }}</td>
+                            <td class="text-end">{{ item.precioVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                             <td class="text-end">
                               {{ calcularGananciaItem(item) | currency:'COP':'symbol-narrow':'1.0-0' }}
                             </td>

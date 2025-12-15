@@ -120,6 +120,7 @@ public class ProductoService {
                                         v.setId(p.getId());
                                         v.setPrecioCompra(p.getPrecioCompra());
                                         v.setStock(p.getStock());
+                                        v.setComentario(p.getComentario());
                                         return v;
                                     })
                                     .toList()

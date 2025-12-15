@@ -61,12 +61,12 @@
           <div class="dialog-section__head">
             <div>
               <p class="section-kicker">Detalle de productos</p>
-              <p class="section-subtitle">Selecciona el producto, su precio disponible y la cantidad vendida.</p>
+              <p class="section-subtitle">Selecciona el producto, registra el subtotal y la cantidad vendida.</p>
             </div>
           </div>
 
-          <div class="dialog-grid dialog-grid--venta">
-            <mat-form-field appearance="outline" class="dialog-grid__full">
+          <div class="venta-form-row">
+            <mat-form-field appearance="outline" class="venta-form-row__producto">
               <mat-label>Producto</mat-label>
               <input
                 matInput
@@ -95,33 +95,14 @@
               </mat-autocomplete>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Precio de venta</mat-label>
+            <mat-form-field appearance="outline" class="venta-form-row__total">
+              <mat-label>Total por unidad</mat-label>
               <input matInput type="number" formControlName="precioVenta" />
               <mat-error *ngIf="itemForm.get('precioVenta')?.hasError('required')">Ingresar un precio.</mat-error>
               <mat-error *ngIf="itemForm.get('precioVenta')?.hasError('min')">Debe ser mayor a 0.</mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Precio disponible</mat-label>
-              <mat-select
-                formControlName="precioId"
-                (selectionChange)="cambioPrecio()"
-                [disabled]="!itemForm.get('productoNombre')?.value"
-              >
-                <ng-container *ngIf="preciosDisponiblesActuales as preciosDisponibles">
-                  <mat-option *ngFor="let precio of preciosDisponibles" [value]="precio.id">
-                    {{ precio.precioCompra | currency:'COP':'symbol-narrow':'1.0-0' }}
-                  </mat-option>
-                  <mat-option *ngIf="itemForm.get('productoNombre')?.value && preciosDisponibles.length === 0" disabled>
-                    Este producto no tiene stock disponible.
-                  </mat-option>
-                </ng-container>
-              </mat-select>
-              <mat-error *ngIf="itemForm.get('precioId')?.hasError('required')">Selecciona un precio.</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" class="venta-form-row__cantidad">
               <mat-label>Cantidad</mat-label>
               <input matInput type="number" min="1" formControlName="cantidad" />
               <mat-error *ngIf="itemForm.get('cantidad')?.hasError('required')">Requerido.</mat-error>
@@ -158,9 +139,9 @@
                 <thead>
                   <tr>
                     <th>Producto</th>
-                    <th class="text-end">Precio compra</th>
                     <th class="text-end">Precio venta</th>
                     <th class="text-end">Cantidad</th>
+                    <th class="text-end">Subtotal</th>
                     <th class="text-end">Acciones</th>
                   </tr>
                 </thead>
@@ -169,9 +150,9 @@
                     <td>
                       <div class="venta-item__name">{{ item.productoNombre }}</div>
                     </td>
-                    <td class="text-end">{{ item.costoUnitario | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                     <td class="text-end">{{ item.precioVenta | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                     <td class="text-end">{{ item.cantidad }}</td>
+                    <td class="text-end">{{ item.subtotal | currency:'COP':'symbol-narrow':'1.0-0' }}</td>
                     <td class="text-end">
                       <button type="button" class="icon-button icon-button--danger" (click)="eliminarItem(i)">
                         <i class="bi bi-trash"></i>

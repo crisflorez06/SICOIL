@@ -165,50 +165,19 @@ public class InventarioService {
     @Transactional
     public Producto registrarIngresoProducto(IngresoProductoRequest request) {
 
-        List<ProductoIdPrecio> listaPrecios = productoRepository.findIdAndPrecioByNombre(request.getNombreProducto());
-
-
-        Long idProducto = listaPrecios.stream()
-                .filter(p -> Double.compare(p.getPrecioCompra(), request.getPrecioCompra()) == 0)
-                .map(ProductoIdPrecio::getId)
-                .findFirst()
-                .orElse(null);
-
-        if(idProducto != null) {
-            log.info("Registrando ingreso de producto {} cantidad {} precio {}", request.getNombreProducto(), request.getCantidad(), request.getPrecioCompra());
-
-            Producto productoDb = productoRepository.findById(idProducto)
-                    .orElseThrow(() -> new EntityNotFoundException("Producto no encontrado con id: " + idProducto));
-
-            int stockActual = productoDb.getStock() != null ? productoDb.getStock() : 0;
-                productoDb.setStock(stockActual + request.getCantidad());
-                Producto guardado = productoRepository.save(productoDb);
-                kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
-                capitalService.registrarIngresoInventario(
-                        guardado,
-                        request.getPrecioCompra(),
-                        request.getCantidad(),
-                        "Ingreso de " + request.getCantidad() +  " de " + request.getNombreProducto()
-                );
-                log.info("Actualizado stock de producto {} manteniendo precio. Nuevo stock {}", guardado.getId(), guardado.getStock());
-                return guardado;
-
-        }
-
         Producto productoDb = productoRepository.findFirstByNombreIgnoreCase(request.getNombreProducto())
                 .orElseThrow(() -> new EntityNotFoundException("Producto base no encontrado"));
 
-
-        // Si el precio es distinto, creas un nuevo producto (misma lógica que tenías)
-        Producto productoNuevoPrecio = new Producto(
-                productoDb.getNombre(),
-                request.getPrecioCompra(),
-                productoDb.getCantidadPorCajas(),
-                request.getCantidad()
-        );
+        Producto productoNuevoPrecio = Producto.builder()
+                .nombre(productoDb.getNombre())
+                .precioCompra(request.getPrecioCompra())
+                .cantidadPorCajas(productoDb.getCantidadPorCajas())
+                .stock(request.getCantidad())
+                .comentario(request.getComentario())
+                .build();
 
         Producto guardado = productoRepository.save(productoNuevoPrecio);
-        kardexService.registrarMovimiento(guardado, request.getCantidad(), null, MovimientoTipo.ENTRADA);
+        kardexService.registrarMovimiento(guardado, request.getCantidad(), request.getComentario(), MovimientoTipo.ENTRADA);
         capitalService.registrarIngresoInventario(
                 guardado,
                 request.getPrecioCompra(),
@@ -254,4 +223,6 @@ public class InventarioService {
             );
         }
     }
+
+
 }

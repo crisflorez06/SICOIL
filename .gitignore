@@ -8,3 +8,7 @@ target/
 
 # Local environment overrides
 .env
+
+# Local-only configuration folders
+dockerLocal/
+propertiesLocal/

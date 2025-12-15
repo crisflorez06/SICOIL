@@ -13,26 +13,22 @@ import org.springframework.data.repository.query.Param;
 
 public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecificationExecutor<Venta> {
 
-    List<Venta> findByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
-
-    @Query("select coalesce(sum(v.total), 0) from Venta v where v.fechaRegistro between :inicio and :fin")
-    BigDecimal sumTotalByFechaBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
-
     @Query("""
-            select coalesce(sum(dv.subtotal - dv.producto.precioCompra), 0)
-            from DetalleVenta dv
-            where dv.venta.fechaRegistro between :inicio and :fin
-            """)
-    BigDecimal sumGananciaByFechaBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
-
-    Long countByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin);
-
-    @Query("""
-            select dv.producto.id, dv.producto.nombre, sum(dv.cantidad), sum(dv.subtotal)
+            select coalesce(sum(dv.subtotal - (dv.cantidad * dv.producto.precioCompra)), 0)
             from DetalleVenta dv
             where (:inicio is null or dv.venta.fechaRegistro >= :inicio)
               and (:fin is null or dv.venta.fechaRegistro <= :fin)
-            group by dv.producto.id, dv.producto.nombre
+              and dv.venta.activa = true
+            """)
+    BigDecimal sumGananciaBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("""
+            select min(dv.producto.id), dv.producto.nombre, sum(dv.cantidad), sum(dv.subtotal)
+            from DetalleVenta dv
+            where (:inicio is null or dv.venta.fechaRegistro >= :inicio)
+              and (:fin is null or dv.venta.fechaRegistro <= :fin)
+              and dv.venta.activa = true
+            group by dv.producto.nombre
             order by sum(dv.cantidad) desc
             """)
     List<Object[]> findTopSellingProducts(@Param("inicio") LocalDateTime inicio,
@@ -44,6 +40,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             from DetalleVenta dv
             where (:inicio is null or dv.venta.fechaRegistro >= :inicio)
               and (:fin is null or dv.venta.fechaRegistro <= :fin)
+              and dv.venta.activa = true
             """)
     Long sumCantidadVendida(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
@@ -57,6 +54,7 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             from DetalleVenta dv
             where (:inicio is null or dv.venta.fechaRegistro >= :inicio)
               and (:fin is null or dv.venta.fechaRegistro <= :fin)
+              and dv.venta.activa = true
             """)
     Double sumCajasVendidas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 
@@ -65,14 +63,26 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
             from Venta v
             where (:inicio is null or v.fechaRegistro >= :inicio)
               and (:fin is null or v.fechaRegistro <= :fin)
+              and v.activa = true
             """)
     Double sumTotalVentas(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("""
+            select year(v.fechaRegistro), month(v.fechaRegistro), coalesce(sum(v.total), 0)
+            from Venta v
+            where v.fechaRegistro >= :inicio
+              and v.activa = true
+            group by year(v.fechaRegistro), month(v.fechaRegistro)
+            order by year(v.fechaRegistro), month(v.fechaRegistro)
+            """)
+    List<Object[]> sumVentasMensualesDesde(@Param("inicio") LocalDateTime inicio);
 
     @Query("""
             select v.cliente.id, v.cliente.nombre, count(v), sum(v.total)
             from Venta v
             where (:inicio is null or v.fechaRegistro >= :inicio)
               and (:fin is null or v.fechaRegistro <= :fin)
+              and v.activa = true
             group by v.cliente.id, v.cliente.nombre
             order by sum(v.total) desc
             """)
@@ -80,15 +90,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long>, JpaSpecific
                                   @Param("fin") LocalDateTime fin,
                                   Pageable pageable);
 
-    @Query("""
-            select distinct v
-            from Venta v
-            left join fetch v.detalles d
-            left join fetch v.cliente
-            left join fetch v.usuario
-            left join fetch d.producto
-            """)
-    List<Venta> findAllWithDetalleAndRelations();
 
     @Query("""
             select v

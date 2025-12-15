@@ -12,4 +12,5 @@ public class ProductoResponse {
     private Double precioCompra;
     private Integer cantidadPorCajas;
     private Integer stock;
+    private String comentario;
 }

@@ -67,4 +67,15 @@ public final class CarteraMovimientoSpecification {
                     : cb.lessThanOrEqualTo(root.get("fecha"), hastaDateTime);
         };
     }
+
+    public static Specification<CarteraMovimiento> ventaActivaEquals(Boolean activa) {
+        return (root, query, cb) -> {
+            if (activa == null) {
+                return cb.conjunction();
+            }
+            return activa
+                    ? cb.isTrue(root.get("cartera").get("venta").get("activa"))
+                    : cb.isFalse(root.get("cartera").get("venta").get("activa"));
+        };
+    }
 }

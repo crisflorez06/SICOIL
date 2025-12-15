@@ -19,4 +19,6 @@ public class IngresoProductoRequest {
     @NotNull
     @PositiveOrZero
     private Integer cantidad;
+
+    private String comentario;
 }

@@ -53,7 +53,7 @@ export class MensajeService {
     const contenedor = this.document.createElement('div');
     contenedor.id = 'toast-container';
     contenedor.className = 'position-fixed bottom-0 end-0 p-3';
-    contenedor.style.zIndex = '1060';
+    contenedor.style.zIndex = '7000';
     this.document.body.appendChild(contenedor);
     return contenedor;
   }

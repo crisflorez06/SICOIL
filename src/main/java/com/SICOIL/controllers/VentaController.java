@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class VentaController {
 
     @GetMapping
     public ResponseEntity<PaginaVentaResponse> traerTodos(
-            @PageableDefault(size = 10) Pageable pageable,
+            @PageableDefault(size = 10, sort = "fechaRegistro", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String tipoVenta,
             @RequestParam(required = false) String nombreCliente,
             @RequestParam(required = false) String nombreUsuario,

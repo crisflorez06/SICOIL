@@ -58,7 +58,11 @@ export class ProductosComponent implements OnInit {
       .listar({ page: pagina, size: this.tamanoPagina, nombre: this.terminoBusqueda.trim() || undefined })
       .subscribe({
       next: (respuesta) => {
-        this.productos = respuesta.content ?? [];
+        const productos = respuesta.content ?? [];
+        this.productos = productos.map((producto) => ({
+          ...producto,
+          variantes: (producto.variantes ?? []).filter((variante) => variante.stock > 0),
+        }));
         this.paginaActual = respuesta.page ?? pagina;
         this.totalPaginas = respuesta.totalPages ?? 0;
         this.totalElementos = respuesta.totalElements ?? 0;

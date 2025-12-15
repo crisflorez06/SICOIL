@@ -3,7 +3,7 @@
     <div class="hero-copy">
       <p class="hero-kicker text-uppercase">Inventario</p>
       <h1 class="hero-title">Catálogo de productos</h1>
-      <p class="hero-lede">Monitorea ingresos, variantes y stock en un panel integrado con el resto de SICOIL.</p>
+      <p class="hero-lede">Monitorea ingresos, lotes y stock en un panel integrado con el resto de SICOIL.</p>
       <div class="hero-metrics">
         <div class="metric-chip">
           <span>En esta vista</span>
@@ -104,7 +104,7 @@
             <th>Producto</th>
             <th class="text-end">Stock total</th>
             <th class="text-end">Capacidad (cajas)</th>
-            <th class="text-end">Variantes</th>
+            <th class="text-end">Lotes</th>
             <th class="text-end">Acciones</th>
           </tr>
         </thead>
@@ -130,7 +130,7 @@
                   (click)="toggleVariantes(i)"
                 >
                   <i class="bi bi-eye"></i>
-                  <span>Variantes</span>
+                  <span>Lotes</span>
                   <span class="badge text-bg-primary-subtle text-primary-emphasis">{{ producto.variantes.length }}</span>
                 </button>
               </td>
@@ -157,14 +157,14 @@
                 <div class="variant-panel">
                   <div class="variant-panel__head">
                     <div>
-                      <p class="variant-panel__title">Variantes registradas</p>
-                      <small class="text-muted">Gestiona precios y stock específicos por presentación.</small>
+                      <p class="variant-panel__title">Lotes registrados</p>
+                      <small class="text-muted">Gestiona precios y stock específicos por cada lote.</small>
                     </div>
                     <span class="variant-count badge text-bg-light text-primary">
                       {{ producto.variantes.length }} en total
                     </span>
                   </div>
-                  <div *ngIf="producto.variantes.length; else sinVariantes">
+                  <div *ngIf="producto.variantes.length; else sinLotes">
                     <div class="table-responsive">
                       <table class="table table-sm variant-table mb-0">
                         <thead>
@@ -172,6 +172,7 @@
                             <th>Precio unidad</th>
                             <th>Precio por caja</th>
                             <th>Stock</th>
+                            <th>Comentario</th>
                             <th class="text-end">Acciones</th>
                           </tr>
                         </thead>
@@ -180,6 +181,7 @@
                             <td>$ {{ variante.precioCompra | number:'1.0-0' }}</td>
                             <td>$ {{ (variante.precioCompra * producto.cantidadPorCajas) | number:'1.0-0' }}</td>
                             <td>{{ variante.stock }}</td>
+                            <td>{{ variante.comentario || '—' }}</td>
                             <td class="text-end">
                               <button
                                 type="button"
@@ -201,8 +203,8 @@
                       </table>
                     </div>
                   </div>
-                  <ng-template #sinVariantes>
-                    <p class="text-muted mb-0">No hay variantes registradas para este producto.</p>
+                  <ng-template #sinLotes>
+                    <p class="text-muted mb-0">No hay lotes con stock disponible para este producto.</p>
                   </ng-template>
                 </div>
               </td>

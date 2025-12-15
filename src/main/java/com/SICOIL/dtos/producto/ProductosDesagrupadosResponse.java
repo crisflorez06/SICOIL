@@ -9,4 +9,5 @@ public class ProductosDesagrupadosResponse {
     private Long id;
     private Double precioCompra;
     private Integer stock;
+    private String comentario;
 }

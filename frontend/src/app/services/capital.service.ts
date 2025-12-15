@@ -61,4 +61,8 @@ export class CapitalService {
   registrarInyeccion(request: CapitalInyeccionRequest): Observable<CapitalMovimientoResponse> {
     return this.http.post<CapitalMovimientoResponse>(`${this.baseUrl}/inyecciones`, request);
   }
+
+  registrarRetiroGanancia(request: CapitalInyeccionRequest): Observable<CapitalMovimientoResponse> {
+    return this.http.post<CapitalMovimientoResponse>(`${this.baseUrl}/retiros`, request);
+  }
 }

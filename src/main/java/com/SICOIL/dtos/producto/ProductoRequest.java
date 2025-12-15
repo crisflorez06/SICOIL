@@ -26,4 +26,6 @@ public class ProductoRequest {
     @PositiveOrZero
     private Integer stock;
 
+    private String comentario;
+
 }

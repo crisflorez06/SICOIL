@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-SICOIL
+    ports:
+      - "3310:3306"
+    environment:
+      MYSQL_DATABASE: SICOIL
+      MYSQL_ROOT_PASSWORD: nacional2000
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - SICOIL-net
+
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: SICOIL-phpmyadmin
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: nacional2000
+    depends_on:
+      - mysql
+    networks:
+      - SICOIL-net
+
+volumes:
+  mysql_data:
+
+networks:
+  SICOIL-net:

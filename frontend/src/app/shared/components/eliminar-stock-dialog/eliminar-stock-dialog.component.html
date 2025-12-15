@@ -24,8 +24,20 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Observación (opcional)</mat-label>
-        <textarea matInput rows="3" formControlName="observacion"></textarea>
+        <mat-label>Observación</mat-label>
+        <textarea
+          matInput
+          rows="3"
+          formControlName="observacion"
+          maxlength="250"
+          placeholder="Describe por qué se retira stock de este lote"
+        ></textarea>
+        <mat-error *ngIf="formulario.get('observacion')?.hasError('required')">
+          Debes indicar el motivo del retiro.
+        </mat-error>
+        <mat-error *ngIf="formulario.get('observacion')?.hasError('maxlength')">
+          El comentario no puede superar los 250 caracteres.
+        </mat-error>
       </mat-form-field>
     </form>
   </div>

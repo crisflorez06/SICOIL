@@ -22,6 +22,7 @@ export interface ProductosDesagrupadosResponse {
   id: number;
   precioCompra: number;
   stock: number;
+  comentario?: string | null;
 }
 
 export interface ProductosAgrupadosResponse {
@@ -43,6 +44,7 @@ export interface IngresoProductoRequest {
   nombreProducto: string;
   precioCompra: number;
   cantidad: number;
+  comentario?: string | null;
 }
 
 export interface InventarioSalidaRequest {

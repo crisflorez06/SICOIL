@@ -5,6 +5,7 @@ import com.SICOIL.dtos.capital.CapitalClienteResumen;
 import com.SICOIL.dtos.capital.CapitalMovimientoResponse;
 import com.SICOIL.dtos.capital.CapitalProductoResumen;
 import com.SICOIL.dtos.capital.CapitalResumenResponse;
+import com.SICOIL.dtos.capital.CapitalVentaMensual;
 import com.SICOIL.mappers.capital.CapitalMovimientoMapper;
 import com.SICOIL.models.CapitalMovimiento;
 import com.SICOIL.models.CapitalOrigen;
@@ -16,12 +17,17 @@ import com.SICOIL.models.Venta;
 import com.SICOIL.repositories.CapitalMovimientoRepository;
 import com.SICOIL.repositories.CarteraRepository;
 import com.SICOIL.repositories.CarteraMovimientoRepository;
+import com.SICOIL.repositories.ProductoRepository;
 import com.SICOIL.repositories.VentaRepository;
 import com.SICOIL.services.usuario.UsuarioService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,6 +49,7 @@ public class CapitalService {
     private final VentaRepository ventaRepository;
     private final UsuarioService usuarioService;
     private final CapitalMovimientoMapper capitalMovimientoMapper;
+    private final ProductoRepository productoRepository;
 
 
     /**
@@ -169,8 +176,8 @@ public class CapitalService {
     /**
      * Registra en el módulo de capital el ingreso correspondiente a un abono realizado
      * sobre una cartera pendiente.
-     * El movimiento se almacena como un origen {@link CapitalOrigen#VENTA}, ya que el
-     * abono representa un pago parcial o total de una venta a crédito previamente registrada.
+     * El movimiento se almacena como un origen {@link CapitalOrigen#ABONO}, permitiendo
+     * diferenciar los pagos posteriores a una venta de los ingresos directos por venta.
      *
      * <p>El proceso incluye:
      * <ul>
@@ -204,10 +211,10 @@ public class CapitalService {
         Long referenciaId = venta != null ? venta.getId() : cartera.getId();
         String detalle = (descripcion != null && !descripcion.isBlank()
                 ? descripcion.trim()
-                : "Abono cartera cliente " + cartera.getCliente().getNombre());
+                : cartera.getCliente().getNombre());
         Usuario usuario = obtenerUsuarioMovimiento();
         registrarMovimiento(
-                CapitalOrigen.VENTA,
+                CapitalOrigen.ABONO,
                 referenciaId,
                 monto,
                 false,
@@ -239,7 +246,7 @@ public class CapitalService {
                 : "Reverso abono cartera cliente " + cartera.getCliente().getNombre();
         Usuario usuario = obtenerUsuarioMovimiento();
         registrarMovimiento(
-                CapitalOrigen.VENTA,
+                CapitalOrigen.ABONO,
                 referenciaId,
                 -monto,
                 false,
@@ -332,6 +339,25 @@ public class CapitalService {
         return capitalMovimientoMapper.toResponse(movimiento);
     }
 
+    public CapitalMovimientoResponse registrarRetiroCapital(double monto, String descripcion) {
+        if (monto <= 0) {
+            throw new IllegalArgumentException("El monto del retiro de ganancia debe ser mayor a cero.");
+        }
+        Usuario usuario = usuarioService.obtenerUsuarioActual();
+        String detalle = (descripcion != null && !descripcion.isBlank())
+                ? descripcion.trim()
+                : "Retiro de ganancias";
+        CapitalMovimiento movimiento = registrarMovimiento(
+                CapitalOrigen.RETIROGANANCIA,
+                null,
+                -monto,
+                false,
+                detalle,
+                usuario
+        );
+        return capitalMovimientoMapper.toResponse(movimiento);
+    }
+
     /**
      * Obtiene una página de movimientos de capital aplicando filtros opcionales por origen, crédito,
      * referencia, descripción y rango de fechas. Los movimientos resultantes se convierten en DTOs
@@ -377,13 +403,15 @@ public class CapitalService {
         double entradas = filtrarPorRango
                 ? defaultValue(capitalMovimientoRepository.sumEntradasBetween(inicio, fin))
                 : defaultValue(capitalMovimientoRepository.sumEntradas());
-        double salidas = Math.abs(filtrarPorRango
-                ? defaultValue(capitalMovimientoRepository.sumSalidasBetween(inicio, fin))
-                : defaultValue(capitalMovimientoRepository.sumSalidas()));
+        double totalCompras = filtrarPorRango
+                ? defaultValue(capitalMovimientoRepository.sumComprasBetween(inicio, fin))
+                : defaultValue(capitalMovimientoRepository.sumCompras());
+        double salidas = Math.abs(totalCompras);
         double pendientes = carteraRepository.findAll().stream()
                 .mapToDouble(c -> c.getSaldo() != null ? c.getSaldo() : 0d)
                 .sum();
-        double ganancias = entradas - salidas;
+        double totalInventario = defaultValue(productoRepository.sumValorInventario());
+        double ganancias = defaultValue(ventaRepository.sumGananciaBetween(inicio, fin));
         double totalAbonos = defaultValue(carteraMovimientoRepository.sumAbonosBetween(inicio, fin));
         double totalCreditosOtorgados = defaultValue(carteraMovimientoRepository.sumCreditosBetween(inicio, fin));
         double totalUnidadesVendidas = defaultValue(ventaRepository.sumCantidadVendida(inicio, fin));
@@ -391,6 +419,7 @@ public class CapitalService {
         double totalVentasPeriodo = defaultValue(ventaRepository.sumTotalVentas(inicio, fin));
         List<CapitalProductoResumen> topProductos = construirTopProductos(inicio, fin, totalUnidadesVendidas);
         List<CapitalClienteResumen> topClientes = construirTopClientes(inicio, fin, totalVentasPeriodo);
+        List<CapitalVentaMensual> ventasMensuales = construirSerieVentasMensuales();
 
         return CapitalResumenResponse.builder()
                 .saldoReal(saldoReal)
@@ -398,13 +427,15 @@ public class CapitalService {
                 .totalSalidas(salidas)
                 .totalCreditoPendiente(pendientes)
                 .totalCredito(totalCreditosOtorgados)
-                .capitalNeto(saldoReal - pendientes)
+                .capitalNeto(saldoReal + pendientes + totalInventario)
                 .totalGanancias(ganancias)
                 .totalAbonos(totalAbonos)
+                .totalInventario(totalInventario)
                 .totalUnidadesVendidas(totalUnidadesVendidas)
                 .totalCajasVendidas(totalCajasVendidas)
                 .topProductos(topProductos)
                 .topClientes(topClientes)
+                .ventasMensuales(ventasMensuales)
                 .build();
     }
 
@@ -456,6 +487,33 @@ public class CapitalService {
                             .build();
                 })
                 .toList();
+    }
+
+    private List<CapitalVentaMensual> construirSerieVentasMensuales() {
+        LocalDate primerMes = LocalDate.now().minusMonths(5).withDayOfMonth(1);
+        LocalDateTime inicio = primerMes.atStartOfDay();
+        List<Object[]> registros = ventaRepository.sumVentasMensualesDesde(inicio);
+        Map<YearMonth, Double> totalesPorMes = new HashMap<>();
+
+        for (Object[] registro : registros) {
+            int anio = registro[0] instanceof Number ? ((Number) registro[0]).intValue() : primerMes.getYear();
+            int mes = registro[1] instanceof Number ? ((Number) registro[1]).intValue() : primerMes.getMonthValue();
+            double total = registro[2] instanceof Number ? ((Number) registro[2]).doubleValue() : 0d;
+            YearMonth clave = YearMonth.of(anio, mes);
+            totalesPorMes.put(clave, total);
+        }
+
+        List<CapitalVentaMensual> serie = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            LocalDate fechaMes = primerMes.plusMonths(i);
+            YearMonth yearMonth = YearMonth.from(fechaMes);
+            double total = totalesPorMes.getOrDefault(yearMonth, 0d);
+            serie.add(CapitalVentaMensual.builder()
+                    .mes(yearMonth.toString())
+                    .total(total)
+                    .build());
+        }
+        return serie;
     }
 
     private CapitalMovimiento registrarMovimiento(CapitalOrigen origen,

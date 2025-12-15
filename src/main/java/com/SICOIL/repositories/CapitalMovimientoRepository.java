@@ -22,7 +22,8 @@ public interface CapitalMovimientoRepository extends JpaRepository<CapitalMovimi
     @Query("""
             select coalesce(sum(cm.monto), 0)
             from CapitalMovimiento cm
-            where cm.esCredito = false and cm.monto > 0
+            where cm.esCredito = false
+              and cm.origen in (com.SICOIL.models.CapitalOrigen.VENTA, com.SICOIL.models.CapitalOrigen.ABONO)
             """)
     Double sumEntradas();
 
@@ -44,6 +45,15 @@ public interface CapitalMovimientoRepository extends JpaRepository<CapitalMovimi
             select coalesce(sum(cm.monto), 0)
             from CapitalMovimiento cm
             where cm.esCredito = false
+              and cm.monto < 0
+              and cm.origen = com.SICOIL.models.CapitalOrigen.COMPRA
+            """)
+    Double sumCompras();
+
+    @Query("""
+            select coalesce(sum(cm.monto), 0)
+            from CapitalMovimiento cm
+            where cm.esCredito = false
               and (:inicio is null or cm.creadoEn >= :inicio)
               and (:fin is null or cm.creadoEn <= :fin)
             """)
@@ -52,7 +62,8 @@ public interface CapitalMovimientoRepository extends JpaRepository<CapitalMovimi
     @Query("""
             select coalesce(sum(cm.monto), 0)
             from CapitalMovimiento cm
-            where cm.esCredito = false and cm.monto > 0
+            where cm.esCredito = false
+              and cm.origen in (com.SICOIL.models.CapitalOrigen.VENTA, com.SICOIL.models.CapitalOrigen.ABONO)
               and (:inicio is null or cm.creadoEn >= :inicio)
               and (:fin is null or cm.creadoEn <= :fin)
             """)
@@ -66,4 +77,15 @@ public interface CapitalMovimientoRepository extends JpaRepository<CapitalMovimi
               and (:fin is null or cm.creadoEn <= :fin)
             """)
     Double sumSalidasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("""
+            select coalesce(sum(cm.monto), 0)
+            from CapitalMovimiento cm
+            where cm.esCredito = false
+              and cm.monto < 0
+              and cm.origen = com.SICOIL.models.CapitalOrigen.COMPRA
+              and (:inicio is null or cm.creadoEn >= :inicio)
+              and (:fin is null or cm.creadoEn <= :fin)
+            """)
+    Double sumComprasBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
 }

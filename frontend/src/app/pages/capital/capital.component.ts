@@ -18,6 +18,7 @@ import {
 import { MensajeService } from '../../services/mensaje.service';
 import { ApiErrorService } from '../../core/services/api-error.service';
 import { InyeccionCapitalDialogComponent } from '../../shared/components/inyeccion-capital-dialog/inyeccion-capital-dialog.component';
+import { RetiroCapitalDialogComponent } from '../../shared/components/retiro-capital-dialog/retiro-capital-dialog.component';
 
 type EstadoCarga = 'idle' | 'cargando' | 'error' | 'listo';
 
@@ -51,7 +52,11 @@ export class CapitalComponent implements OnInit {
 
   resumen: CapitalResumenResponse | null = null;
   registrandoInyeccion = false;
+  registrandoRetiro = false;
   tablaScrollActiva = false;
+  productoSeleccionadoIndex = 0;
+  clienteSeleccionadoIndex = 0;
+  private readonly participacionColores = ['#0ea5e9', '#f97316', '#10b981', '#a855f7', '#f43f5e', '#22d3ee'];
 
   ngOnInit(): void {
     this.buscarMovimientos();
@@ -69,6 +74,7 @@ export class CapitalComponent implements OnInit {
         next: (data) => {
           this.resumen = data;
           this.estadoResumen = 'listo';
+          this.reiniciarSeleccionParticipacion();
         },
         error: () => {
           this.estadoResumen = 'error';
@@ -199,6 +205,36 @@ export class CapitalComponent implements OnInit {
     });
   }
 
+  registrarRetiroGanancia(): void {
+    const dialogRef = this.dialog.open(RetiroCapitalDialogComponent, {
+      width: '480px',
+      disableClose: true,
+    });
+
+    dialogRef.afterClosed().subscribe((payload?: CapitalInyeccionRequest | null) => {
+      if (!payload) {
+        return;
+      }
+      this.registrandoRetiro = true;
+      this.capitalService
+        .registrarRetiroGanancia(payload)
+        .pipe(
+          finalize(() => {
+            this.registrandoRetiro = false;
+          }),
+        )
+        .subscribe({
+          next: () => {
+            this.mensajeService.success('Retiro registrado correctamente.');
+            this.buscar();
+          },
+          error: (error) => {
+            this.apiErrorService.handle(error, { contextMessage: 'No se pudo registrar el retiro.' });
+          },
+        });
+    });
+  }
+
   get hayMovimientos(): boolean {
     return this.movimientos.length > 0;
   }
@@ -215,28 +251,33 @@ export class CapitalComponent implements OnInit {
     return this.estadoResumen === 'listo' && !!this.resumen;
   }
 
-  get comparativoFlujo(): { label: string; valor: number; descripcion: string; clase: 'entradas' | 'salidas' | 'pendiente' }[] {
+  get comparativoFlujo(): {
+    label: string;
+    valor: number;
+    descripcion: string;
+    clase: 'entradas' | 'salidas' | 'pendiente' | 'credito';
+  }[] {
     if (!this.resumen) {
       return [];
     }
     return [
       {
-        label: 'Total ventas',
+        label: 'Total ventas contado',
         valor: Math.max(this.resumen.totalEntradas, 0),
-        descripcion: 'Ventas registradas',
+        descripcion: 'Ventas cobradas o abonadas',
         clase: 'entradas',
+      },
+      {
+        label: 'Total ventas crédito',
+        valor: Math.max(this.resumen.totalCreditoPendiente, 0),
+        descripcion: 'Saldo pendiente en ventas a crédito',
+        clase: 'credito',
       },
       {
         label: 'Total compras',
         valor: Math.max(this.resumen.totalSalidas, 0),
         descripcion: 'Compras e inversión',
         clase: 'salidas',
-      },
-      {
-        label: 'Crédito pendiente',
-        valor: Math.max(this.resumen.totalCreditoPendiente, 0),
-        descripcion: 'Por cobrar',
-        clase: 'pendiente',
       },
     ];
   }
@@ -254,6 +295,46 @@ export class CapitalComponent implements OnInit {
 
   get clientesDestacados(): CapitalTopCliente[] {
     return this.resumen?.topClientes ?? [];
+  }
+
+  get productoSeleccionado(): CapitalTopProducto | null {
+    const productos = this.productosDestacados;
+    if (!productos.length) {
+      return null;
+    }
+    const index = Math.min(this.productoSeleccionadoIndex, productos.length - 1);
+    return productos[index];
+  }
+
+  get clienteSeleccionado(): CapitalTopCliente | null {
+    const clientes = this.clientesDestacados;
+    if (!clientes.length) {
+      return null;
+    }
+    const index = Math.min(this.clienteSeleccionadoIndex, clientes.length - 1);
+    return clientes[index];
+  }
+
+  get productosDonutBackground(): string {
+    return this.generarConicGradient(this.productosDestacados);
+  }
+
+  get clientesDonutBackground(): string {
+    return this.generarConicGradient(this.clientesDestacados);
+  }
+
+  colorParticipacion(index: number): string {
+    return this.participacionColores[index % this.participacionColores.length];
+  }
+
+  seleccionarProducto(index: number): void {
+    const maxIndex = Math.max(this.productosDestacados.length - 1, 0);
+    this.productoSeleccionadoIndex = Math.min(Math.max(index, 0), maxIndex);
+  }
+
+  seleccionarCliente(index: number): void {
+    const maxIndex = Math.max(this.clientesDestacados.length - 1, 0);
+    this.clienteSeleccionadoIndex = Math.min(Math.max(index, 0), maxIndex);
   }
 
   trackProducto(index: number, producto: CapitalTopProducto): number {
@@ -305,11 +386,43 @@ export class CapitalComponent implements OnInit {
     return this.creditoComparativo.reduce((max, item) => (item.valor > max ? item.valor : max), 0);
   }
 
-  get rentabilidadPorcentaje(): number {
-    if (!this.resumen || this.resumen.totalEntradas === 0) {
+  get ventasMensualesSerie(): { label: string; valor: number }[] {
+    if (!this.resumen || !Array.isArray(this.resumen.ventasMensuales)) {
+      return [];
+    }
+    return this.resumen.ventasMensuales.map((item) => ({
+      label: this.formatearMes(item.mes),
+      valor: Math.max(item.total ?? 0, 0),
+    }));
+  }
+
+  get maxVentasMensuales(): number {
+    return this.ventasMensualesSerie.reduce((max, item) => (item.valor > max ? item.valor : max), 0);
+  }
+
+  get ventasMensualesColumnas(): { label: string; valor: number; porcentaje: number }[] {
+    const max = this.maxVentasMensuales || 1;
+    return this.ventasMensualesSerie.map((item) => ({
+      ...item,
+      porcentaje: max > 0 ? (item.valor / max) * 100 : 0,
+    }));
+  }
+
+  get totalVentasPeriodo(): number {
+    if (!this.resumen) {
       return 0;
     }
-    return (this.resumen.totalGanancias / Math.abs(this.resumen.totalEntradas)) * 100;
+    const contado = Math.max(this.resumen.totalEntradas ?? 0, 0);
+    const creditoPendiente = Math.max(this.resumen.totalCreditoPendiente ?? 0, 0);
+    return contado + creditoPendiente;
+  }
+
+  get rentabilidadPorcentaje(): number {
+    const totalVentas = this.totalVentasPeriodo;
+    if (!this.resumen || totalVentas === 0) {
+      return 0;
+    }
+    return (this.resumen.totalGanancias / Math.abs(totalVentas)) * 100;
   }
 
   get rentabilidadEsPositiva(): boolean {
@@ -334,21 +447,60 @@ export class CapitalComponent implements OnInit {
     switch (origen) {
       case 'VENTA':
         return 'Venta';
+      case 'ABONO':
+        return 'Abono';
       case 'COMPRA':
         return 'Compra';
       case 'INYECCION':
         return 'Inyección';
+      case 'RETIROGANANCIA':
+        return 'Retiro de ganancia';
       default:
         return origen;
     }
   }
 
   montoClase(origen: CapitalOrigen): string {
-    return origen === 'COMPRA' ? 'text-danger' : 'text-success';
+    return origen === 'COMPRA' || origen === 'RETIROGANANCIA' ? 'text-danger' : 'text-success';
   }
 
   onTablaScroll(event: Event): void {
     const target = event.target as HTMLElement | null;
     this.tablaScrollActiva = !!target && target.scrollTop > 0;
+  }
+
+  private formatearMes(mesIso: string | undefined | null): string {
+    if (!mesIso) {
+      return '';
+    }
+    const [anioStr, mesStr] = mesIso.split('-');
+    const anio = Number(anioStr);
+    const mes = Number(mesStr);
+    if (Number.isNaN(anio) || Number.isNaN(mes)) {
+      return mesIso;
+    }
+    const fecha = new Date(anio, mes - 1);
+    return new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(fecha);
+  }
+
+  private reiniciarSeleccionParticipacion(): void {
+    this.productoSeleccionadoIndex = 0;
+    this.clienteSeleccionadoIndex = 0;
+  }
+
+  private generarConicGradient<T extends { participacionPorcentaje: number }>(items: T[]): string {
+    if (!items.length) {
+      return 'conic-gradient(#e2e8f0 0deg 360deg)';
+    }
+    const total = items.reduce((sum, item) => sum + Math.max(item.participacionPorcentaje ?? 0, 0), 0) || 1;
+    let acumulado = 0;
+    const secciones = items.map((item, index) => {
+      const valor = Math.max(item.participacionPorcentaje ?? 0, 0);
+      const inicio = (acumulado / total) * 100;
+      acumulado += valor;
+      const fin = (acumulado / total) * 100;
+      return `${this.colorParticipacion(index)} ${inicio}% ${fin}%`;
+    });
+    return `conic-gradient(${secciones.join(', ')})`;
   }
 }

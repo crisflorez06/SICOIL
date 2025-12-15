@@ -16,8 +16,10 @@ public class CapitalResumenResponse {
     private double capitalNeto;
     private double totalGanancias;
     private double totalAbonos;
+    private double totalInventario;
     private double totalUnidadesVendidas;
     private double totalCajasVendidas;
     private List<CapitalProductoResumen> topProductos;
     private List<CapitalClienteResumen> topClientes;
+    private List<CapitalVentaMensual> ventasMensuales;
 }

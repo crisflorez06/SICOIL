@@ -14,17 +14,21 @@ public interface ProductoRepository extends JpaRepository<Producto, Long>, JpaSp
 
     boolean existsByNombreIgnoreCase(String nombre);
 
-    Optional<Producto> findByNombreIgnoreCase(String nombre);
+    List<Producto> findByNombreIgnoreCaseOrderByFechaRegistroAsc(String nombre);
 
     @Query("SELECT p.nombre AS nombre, SUM(p.stock) AS stockTotal, MAX(p.cantidadPorCajas) AS cantidadPorCajas " +
             "FROM Producto p GROUP BY p.nombre")
     List<ProductosSInPrecio> inventarioAgrupado();
 
-    @Query("SELECT p.id AS id, p.precioCompra AS precioCompra FROM Producto p WHERE LOWER(p.nombre) = LOWER(:nombre)")
-    List<ProductoIdPrecio> findIdAndPrecioByNombre(@org.springframework.data.repository.query.Param("nombre") String nombre);
+    @Query("""
+            select coalesce(sum(coalesce(p.stock, 0) * coalesce(p.precioCompra, 0)), 0)
+            from Producto p
+            """)
+    Double sumValorInventario();
 
     Optional<Producto> findFirstByNombreIgnoreCase(String nombre);
 
     List<Producto> findAllByNombreIgnoreCase(String nombre);
 
+    List<Producto> findByNombreOrderByFechaRegistroAsc(String nombre);
 }

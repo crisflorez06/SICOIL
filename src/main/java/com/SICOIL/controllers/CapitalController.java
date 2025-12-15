@@ -71,4 +71,15 @@ public class CapitalController {
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @PostMapping("/retiros")
+    public ResponseEntity<CapitalMovimientoResponse> registrarRetiroGanancia(
+            @Valid @RequestBody CapitalInyeccionRequest request
+    ) {
+        CapitalMovimientoResponse response = capitalService.registrarRetiroCapital(
+                request.getMonto(),
+                request.getDescripcion()
+        );
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
 }

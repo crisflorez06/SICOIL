@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 public class DetalleVentaRequest {
     @NotNull
-    private Long productoId;
+    private String nombreProducto;
 
     @NotNull
     @Positive

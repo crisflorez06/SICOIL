@@ -1,11 +1,11 @@
 <section class="inventory-dialog">
   <header class="dialog-header">
     <div class="dialog-icon">
-      <i class="bi bi-bank2"></i>
+      <i class="bi bi-cash"></i>
     </div>
     <div>
-      <h2 mat-dialog-title class="dialog-title">Registrar inyección de capital</h2>
-      <p class="dialog-subtitle">Captura los refuerzos de liquidez para mantener actualizado el flujo de caja.</p>
+      <h2 mat-dialog-title class="dialog-title">Registrar retiro de ganancias</h2>
+      <p class="dialog-subtitle">Controla las salidas de utilidad para mantener el saldo de capital actualizado.</p>
     </div>
   </header>
 
@@ -13,14 +13,14 @@
     <form [formGroup]="formulario" class="dialog-form">
       <mat-form-field appearance="outline">
         <mat-label>Monto</mat-label>
-        <input matInput type="number" min="0" step="0.01" placeholder="Ej. 150000" formControlName="monto" />
+        <input matInput type="number" min="0" step="0.01" placeholder="Ej. 250000" formControlName="monto" />
         <mat-error *ngIf="formulario.get('monto')?.hasError('required')">Este campo es obligatorio.</mat-error>
         <mat-error *ngIf="formulario.get('monto')?.hasError('min')">El monto debe ser mayor a 0.</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
         <mat-label>Descripción</mat-label>
-        <textarea matInput rows="3" placeholder="Motivo de la inyección" formControlName="descripcion"></textarea>
+        <textarea matInput rows="3" placeholder="Motivo del retiro" formControlName="descripcion"></textarea>
         <mat-hint>Opcional</mat-hint>
         <mat-error *ngIf="formulario.get('descripcion')?.hasError('maxlength')">Máximo 250 caracteres.</mat-error>
       </mat-form-field>
@@ -29,6 +29,6 @@
 
   <div mat-dialog-actions class="dialog-actions">
     <button type="button" class="dialog-btn dialog-btn--ghost dialog-btn--compact" (click)="cancelar()">Cancelar</button>
-    <button type="button" class="dialog-btn dialog-btn--primary dialog-btn--compact" (click)="guardar()">Registrar</button>
+    <button type="button" class="dialog-btn dialog-btn--danger dialog-btn--compact" (click)="guardar()">Registrar</button>
   </div>
 </section>

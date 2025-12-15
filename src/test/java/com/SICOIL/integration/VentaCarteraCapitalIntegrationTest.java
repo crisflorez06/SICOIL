@@ -226,7 +226,7 @@ class VentaCarteraCapitalIntegrationTest {
         assertThat(ajustes).hasSize(1);
 
         List<CapitalMovimiento> movimientosCapital = capitalMovimientoRepository.findByOrigenAndReferenciaId(
-                CapitalOrigen.VENTA,
+                CapitalOrigen.ABONO,
                 venta.getId()
         );
         double totalLiquido = movimientosCapital.stream()

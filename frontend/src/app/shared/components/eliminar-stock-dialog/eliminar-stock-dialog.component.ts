@@ -26,7 +26,7 @@ export class EliminarStockDialogComponent {
 
   readonly formulario = this.fb.group({
     cantidad: [null as number | null, [Validators.required, Validators.min(1)]],
-    observacion: [''],
+    observacion: ['', [Validators.required, Validators.maxLength(250)]],
   });
 
   constructor(@Inject(MAT_DIALOG_DATA) readonly data: EliminarStockDialogData) {

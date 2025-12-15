@@ -1,5 +1,5 @@
 export interface DetalleVentaRequest {
-  productoId: number;
+  nombreProducto: string;
   cantidad: number;
   subtotal: number;
 }

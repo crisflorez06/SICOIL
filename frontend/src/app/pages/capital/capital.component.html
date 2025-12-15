@@ -53,7 +53,7 @@
     <div class="stat-grid">
       <article
         class="stat-card"
-        matTooltip="Saldo disponible luego de restar todas las salidas de efectivo al capital actual."
+        matTooltip="Dinero disponible actualmente en caja y banco. Incluye ventas de contado, pagos de créditos e inyecciones. No incluye ventas a crédito pendientes ni inventario."
       >
         <div class="stat-card__label">
           <span>Saldo real</span>
@@ -67,7 +67,7 @@
 
       <article
         class="stat-card"
-        matTooltip="Capital total de la empresa: activos menos pasivos registrados."
+        matTooltip="Valor total del negocio en este momento. Se calcula como activos menos pasivos: efectivo + cartera por cobrar + inventario valorizado."
       >
         <div class="stat-card__label">
           <span>Capital neto</span>
@@ -80,7 +80,7 @@
 
       <article
         class="stat-card"
-        matTooltip="Resultado del periodo: entradas menos salidas y costos asociados."
+        matTooltip="Resultado económico del período seleccionado. Se genera cuando se registran ventas, independiente de si fueron pagadas o a crédito."
       >
         <div class="stat-card__label">
           <span>Ganancias</span>
@@ -91,38 +91,63 @@
         <small>Resultado del periodo</small>
       </article>
 
+      <article class="stat-card stat-card--split">
+        <div class="stat-card__split">
+          <div
+            matTooltip="Cantidad total de unidades vendidas en el período seleccionado, sin distinguir entre ventas de contado o crédito."
+          >
+            <p class="stat-card__label">Unidades vendidas</p>
+            <p class="stat-card__subvalue mb-0">{{ resumen?.totalUnidadesVendidas | number }}</p>
+          </div>
+          <div class="stat-card__divider" aria-hidden="true"></div>
+          <div
+            matTooltip="Cantidad total de cajas vendidas en el período, calculada según la configuración del producto."
+          >
+            <p class="stat-card__label">Cajas vendidas</p>
+            <p class="stat-card__subvalue mb-0">{{ resumen?.totalCajasVendidas | number:'1.0-2' }}</p>
+          </div>
+        </div>
+      </article>
+
+      <article
+        class="stat-card"
+        matTooltip="Dinero que los clientes aún deben por ventas a crédito. Aumenta con ventas a crédito y disminuye con abonos o pagos."
+      >
+        <div class="stat-card__label">
+          <span>Cartera por cobrar</span>
+        </div>
+        <p class="stat-card__value text-warning">
+          {{ resumen?.totalCreditoPendiente | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </p>
+        <small>Saldo adeudado</small>
+      </article>
+
+      <article
+        class="stat-card"
+        matTooltip="Valor del inventario disponible calculado al costo de compra. Representa capital invertido en productos no vendidos."
+      >
+        <div class="stat-card__label">
+          <span>Inventario valorizado</span>
+        </div>
+        <p class="stat-card__value text-info">
+          {{ resumen?.totalInventario | currency:'COP':'symbol-narrow':'1.0-0' }}
+        </p>
+        <small>Costos acumulados</small>
+      </article>
+
       <div class="stat-grid-break" aria-hidden="true"></div>
 
-      <article
-        class="stat-card stat-card--compact"
-        matTooltip="Cantidad total de unidades vendidas en el rango consultado."
-      >
-        <div class="stat-card__label">
-          <span>Unidades vendidas</span>
-        </div>
-        <p class="stat-card__subvalue">{{ resumen?.totalUnidadesVendidas | number }}</p>
-      </article>
-
-      <article
-        class="stat-card stat-card--compact"
-        matTooltip="Equivalencia en cajas completas vendidas."
-      >
-        <div class="stat-card__label">
-          <span>Cajas vendidas</span>
-        </div>
-        <p class="stat-card__subvalue">{{ resumen?.totalCajasVendidas | number:'1.0-2' }}</p>
-      </article>
     </div>
 
-    <div class="insight-grid">
+    <div class="insight-grid insight-grid--quad">
       <article
         class="insight-card chart-card"
-        matTooltip="Compara todo el efectivo entrante contra las salidas y crédito pendiente."
+        matTooltip="Comparación entre el dinero que ingresó y el dinero que salió del negocio durante el período seleccionado. Mide movimiento de efectivo, no ganancias."
       >
         <div class="insight-card__head">
           <div>
             <p class="insight-kicker">Flujo de capital</p>
-            <h3>Entradas vs salidas</h3>
+            <h3>Flujo de caja</h3>
           </div>
           <i class="bi bi-bar-chart-line"></i>
         </div>
@@ -138,7 +163,8 @@
                 [ngClass]="{
                   'chart-bar__fill--success': item.clase === 'entradas',
                   'chart-bar__fill--danger': item.clase === 'salidas',
-                  'chart-bar__fill--warning': item.clase === 'pendiente'
+                  'chart-bar__fill--warning': item.clase === 'pendiente',
+                  'chart-bar__fill--info': item.clase === 'credito'
                 }"
                 [style.width.%]="maxFlujoValor ? (item.valor / maxFlujoValor) * 100 : 0"
               ></div>
@@ -152,12 +178,12 @@
 
       <article
         class="insight-card chart-card"
-        matTooltip="Muestra cuánto crédito se ha otorgado, lo recuperado y lo pendiente."
+        matTooltip="Muestra el total de crédito otorgado a clientes, los pagos recibidos y el saldo pendiente por cobrar."
       >
         <div class="insight-card__head">
           <div>
             <p class="insight-kicker">Cartera</p>
-            <h3>Crédito vs abonos</h3>
+            <h3>Crédito otorgado vs abonos</h3>
           </div>
           <i class="bi bi-graph-up-arrow"></i>
         </div>
@@ -186,8 +212,134 @@
       </article>
 
       <article
-        class="insight-card chart-card insight-card--gauge"
-        matTooltip="Indicador visual del margen de ganancia respecto a las ventas del periodo."
+        class="insight-card"
+        matTooltip="Distribución porcentual de las ventas por producto. Permite identificar los productos con mayor impacto en ingresos."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Top productos</p>
+            <h3>Participación por ventas</h3>
+          </div>
+          <i class="bi bi-trophy"></i>
+        </div>
+        <div *ngIf="productosDestacados.length > 0; else sinTopProductos" class="participacion-chart">
+          <div class="participacion-chart__donut" [style.background]="productosDonutBackground">
+            <div class="participacion-chart__center" *ngIf="productoSeleccionado as seleccionadoProducto">
+              <p class="participacion-chart__label">{{ seleccionadoProducto.productoNombre }}</p>
+              <p class="participacion-chart__value">
+                {{ (seleccionadoProducto.participacionPorcentaje / 100) | percent:'1.0-1' }}
+              </p>
+            </div>
+          </div>
+          <ul class="participacion-chart__legend">
+            <li
+              class="participacion-chart__legend-item"
+              *ngFor="let producto of productosDestacados; index as i; trackBy: trackProducto"
+              (mouseenter)="seleccionarProducto(i)"
+              (focus)="seleccionarProducto(i)"
+              (click)="seleccionarProducto(i)"
+              (keyup.enter)="seleccionarProducto(i)"
+              (keyup.space)="seleccionarProducto(i)"
+              [class.active]="productoSeleccionadoIndex === i"
+              [attr.aria-pressed]="productoSeleccionadoIndex === i"
+              role="button"
+              tabindex="0"
+            >
+              <span class="participacion-chart__legend-dot" [style.background]="colorParticipacion(i)"></span>
+              <div>
+                <p class="participacion-chart__legend-title">{{ producto.productoNombre }}</p>
+                <small class="text-muted">{{ (producto.participacionPorcentaje / 100) | percent:'1.0-1' }}</small>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <ng-template #sinTopProductos>
+          <p class="text-muted mb-0">No hay productos destacados en el rango consultado.</p>
+        </ng-template>
+      </article>
+
+      <article
+        class="insight-card"
+        matTooltip="Distribución porcentual de las compras por proveedor. Ayuda a identificar dependencia o concentración de compras."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Top clientes</p>
+            <h3>Participación por compras</h3>
+          </div>
+          <i class="bi bi-people"></i>
+        </div>
+        <div *ngIf="clientesDestacados.length > 0; else sinTopClientes" class="participacion-chart">
+          <div class="participacion-chart__donut participacion-chart__donut--clientes" [style.background]="clientesDonutBackground">
+            <div class="participacion-chart__center" *ngIf="clienteSeleccionado as seleccionadoCliente">
+              <p class="participacion-chart__label">{{ seleccionadoCliente.clienteNombre }}</p>
+              <p class="participacion-chart__value">
+                {{ (seleccionadoCliente.participacionPorcentaje / 100) | percent:'1.0-1' }}
+              </p>
+            </div>
+          </div>
+          <ul class="participacion-chart__legend">
+            <li
+              class="participacion-chart__legend-item"
+              *ngFor="let cliente of clientesDestacados; index as i; trackBy: trackCliente"
+              (mouseenter)="seleccionarCliente(i)"
+              (focus)="seleccionarCliente(i)"
+              (click)="seleccionarCliente(i)"
+              (keyup.enter)="seleccionarCliente(i)"
+              (keyup.space)="seleccionarCliente(i)"
+              [class.active]="clienteSeleccionadoIndex === i"
+              [attr.aria-pressed]="clienteSeleccionadoIndex === i"
+              role="button"
+              tabindex="0"
+            >
+              <span class="participacion-chart__legend-dot" [style.background]="colorParticipacion(i)"></span>
+              <div>
+                <p class="participacion-chart__legend-title">{{ cliente.clienteNombre }}</p>
+                <small class="text-muted">{{ (cliente.participacionPorcentaje / 100) | percent:'1.0-1' }}</small>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <ng-template #sinTopClientes>
+          <p class="text-muted mb-0">No hay clientes destacados en el rango consultado.</p>
+        </ng-template>
+      </article>
+
+    </div>
+
+    <div class="insight-grid insight-grid--wide">
+      <article
+        class="insight-card chart-card insight-card--large"
+        matTooltip="Evolución de las ventas registradas en los últimos seis meses. Refleja ingresos generados, no pagos recibidos."
+      >
+        <div class="insight-card__head">
+          <div>
+            <p class="insight-kicker">Ventas</p>
+            <h3>Ventas – Últimos 6 meses</h3>
+          </div>
+          <i class="bi bi-calendar3"></i>
+        </div>
+        <div class="ventas-bar-chart" *ngIf="ventasMensualesSerie.length; else sinDatosVentasMensuales">
+          <div class="ventas-bar-chart__grid">
+            <div class="ventas-bar-chart__column" *ngFor="let item of ventasMensualesColumnas">
+              <div class="ventas-bar-chart__value">
+                {{ item.valor | currency:'COP':'symbol-narrow':'1.0-0' }}
+              </div>
+              <div class="ventas-bar-chart__bar-track">
+                <div class="ventas-bar-chart__bar" [style.height.%]="item.porcentaje"></div>
+              </div>
+              <div class="ventas-bar-chart__label">{{ item.label }}</div>
+            </div>
+          </div>
+        </div>
+        <ng-template #sinDatosVentasMensuales>
+          <p class="text-muted mb-0">No hay ventas registradas en los últimos meses.</p>
+        </ng-template>
+      </article>
+
+      <article
+        class="insight-card chart-card insight-card--gauge insight-card--large"
+        matTooltip="Porcentaje de ganancia sobre las ventas del período. Se calcula como ganancia dividida entre ventas totales."
       >
         <div class="insight-card__head">
           <div>
@@ -208,74 +360,12 @@
         </p>
         <p class="insight-foot">
           Ventas totales:
-          <strong>{{ resumen?.totalEntradas | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+          <strong>{{ totalVentasPeriodo | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
         </p>
       </article>
 
-      <article
-        class="insight-card"
-        matTooltip="Ranking de productos con mayor participación en ventas."
-      >
-        <div class="insight-card__head">
-          <div>
-            <p class="insight-kicker">Top productos</p>
-            <h3>Participación por ventas</h3>
-          </div>
-          <i class="bi bi-trophy"></i>
-        </div>
-        <div *ngIf="productosDestacados.length > 0; else sinTopProductos" class="top-list">
-          <div class="top-list__item" *ngFor="let producto of productosDestacados; trackBy: trackProducto">
-            <div>
-              <p class="top-list__title">{{ producto.productoNombre }}</p>
-              <small class="text-muted">
-                {{ producto.cantidadVendida }} uds · {{ producto.totalVendido | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </small>
-            </div>
-            <div class="top-list__value">
-              {{ (producto.participacionPorcentaje / 100) | percent:'1.0-1' }}
-            </div>
-            <div class="top-product-bar">
-              <div class="top-product-bar__fill" [style.width.%]="producto.participacionPorcentaje"></div>
-            </div>
-          </div>
-        </div>
-        <ng-template #sinTopProductos>
-          <p class="text-muted mb-0">No hay productos destacados en el rango consultado.</p>
-        </ng-template>
-      </article>
-
-      <article
-        class="insight-card"
-        matTooltip="Clientes con mayor aporte en las ventas del periodo."
-      >
-        <div class="insight-card__head">
-          <div>
-            <p class="insight-kicker">Top clientes</p>
-            <h3>Participación por compras</h3>
-          </div>
-          <i class="bi bi-people"></i>
-        </div>
-        <div *ngIf="clientesDestacados.length > 0; else sinTopClientes" class="top-list">
-          <div class="top-list__item" *ngFor="let cliente of clientesDestacados; trackBy: trackCliente">
-            <div>
-              <p class="top-list__title">{{ cliente.clienteNombre }}</p>
-              <small class="text-muted">
-                {{ cliente.totalVentas }} compras · {{ cliente.montoComprado | currency:'COP':'symbol-narrow':'1.0-0' }}
-              </small>
-            </div>
-            <div class="top-list__value">
-              {{ (cliente.participacionPorcentaje / 100) | percent:'1.0-1' }}
-            </div>
-            <div class="top-product-bar">
-              <div class="top-product-bar__fill top-client__fill" [style.width.%]="cliente.participacionPorcentaje"></div>
-            </div>
-          </div>
-        </div>
-        <ng-template #sinTopClientes>
-          <p class="text-muted mb-0">No hay clientes destacados en el rango consultado.</p>
-        </ng-template>
-      </article>
     </div>
+
   </ng-container>
 
   <ng-template #resumenVacio>
@@ -289,19 +379,32 @@
     <div class="filters-header">
       <div>
         <p class="filters-title">Movimientos</p>
-        <p class="filters-subtitle mb-0">Refina la tabla con múltiples criterios y genera nuevas inyecciones.</p>
+        <p class="filters-subtitle mb-0">Refina la tabla con múltiples criterios y gestiona inyecciones o retiros.</p>
       </div>
-      <button
-        type="button"
-        class="btn btn-success d-flex align-items-center gap-2"
-        (click)="registrarInyeccion()"
-        [disabled]="registrandoInyeccion"
-      >
-        <ng-container *ngIf="!registrandoInyeccion; else registrandoInyeccionTpl">
-          <i class="bi bi-plus-circle"></i>
-          <span>Nueva inyección</span>
-        </ng-container>
-      </button>
+      <div class="filters-header__actions">
+        <button
+          type="button"
+          class="btn btn-success d-flex align-items-center gap-2"
+          (click)="registrarInyeccion()"
+          [disabled]="registrandoInyeccion"
+        >
+          <ng-container *ngIf="!registrandoInyeccion; else registrandoInyeccionTpl">
+            <i class="bi bi-plus-circle"></i>
+            <span>Nueva inyección</span>
+          </ng-container>
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-danger d-flex align-items-center gap-2"
+          (click)="registrarRetiroGanancia()"
+          [disabled]="registrandoRetiro"
+        >
+          <ng-container *ngIf="!registrandoRetiro; else registrandoRetiroTpl">
+            <i class="bi bi-wallet"></i>
+            <span>Retirar ganancia</span>
+          </ng-container>
+        </button>
+      </div>
     </div>
     <div class="filters-grid">
       <div class="filters-field">
@@ -311,6 +414,7 @@
           <option value="VENTA">Venta</option>
           <option value="COMPRA">Compra</option>
           <option value="INYECCION">Inyección</option>
+          <option value="RETIROGANANCIA">Retiro de ganancia</option>
         </select>
       </div>
       <div class="filters-field">
@@ -356,6 +460,10 @@
   <ng-template #registrandoInyeccionTpl>
     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
     <span>Guardando...</span>
+  </ng-template>
+  <ng-template #registrandoRetiroTpl>
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>Procesando...</span>
   </ng-template>
 
   <div class="status-banner status-banner--info" *ngIf="estadoMovimientos === 'cargando'">
