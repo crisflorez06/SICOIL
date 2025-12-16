@@ -61,6 +61,7 @@ public class VentaMapper {
         venta.setTipoVenta(request.getTipoVenta());
         venta.setActiva(true);
         venta.setMotivoAnulacion(null);
+        venta.setFechaRegistro(request.getFechaRegistro());
 
         double total = 0.0;
         List<DetalleVenta> detallesFinales = new ArrayList<>();

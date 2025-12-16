@@ -281,7 +281,8 @@ public class VentaService {
                         lote,
                         aDescontar,
                         "Venta #" + venta.getId() + " - desde lote " + lote.getId(),
-                        MovimientoTipo.SALIDA
+                        MovimientoTipo.SALIDA,
+                        venta.getFechaRegistro()
                 );
 
                 restante -= aDescontar;

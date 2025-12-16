@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ProductoRequest } from '../../../models/producto.model';
+import { getCurrentLocalDateTimeInput, normalizeDateTimeInput } from '../../utils/datetime.util';
 
 @Component({
   selector: 'app-registro-producto-dialog',
@@ -33,6 +34,7 @@ export class RegistroProductoDialogComponent {
     cantidadPorCajas: [1, [Validators.required, Validators.min(1)]],
     precioCompra: [null as number | null, [Validators.required, Validators.min(0.01)]],
     stock: [null as number | null, [Validators.required, Validators.min(0)]],
+    fechaRegistro: [getCurrentLocalDateTimeInput(), Validators.required],
   });
 
   cancelar(): void {
@@ -51,6 +53,12 @@ export class RegistroProductoDialogComponent {
     const precioFinal = payload.precioCompra ?? 0;
     const stockFinal = payload.stock ?? 0;
     const cantidadPorCajas = payload.cantidadPorCajas ?? 1;
+    const fechaNormalizada = normalizeDateTimeInput(payload.fechaRegistro);
+    if (!fechaNormalizada) {
+      this.formulario.get('fechaRegistro')?.setErrors({ invalid: true });
+      this.formulario.get('fechaRegistro')?.markAsTouched();
+      return;
+    }
     const nombreBase = (payload.nombre ?? '').trim();
     const presentacion = payload.presentacion ?? 'UNIDAD';
     const nombreNormalizado = nombreBase ? nombreBase.toLocaleUpperCase() : '';
@@ -61,6 +69,7 @@ export class RegistroProductoDialogComponent {
       cantidadPorCajas,
       precioCompra: precioFinal,
       stock: stockFinal,
+      fechaRegistro: fechaNormalizada,
     };
     this.dialogRef.close(resultado);
   }

@@ -54,6 +54,17 @@
                 <mat-option *ngIf="clientesFiltrados.length === 0" disabled>Sin coincidencias</mat-option>
               </mat-autocomplete>
             </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Fecha de la venta</mat-label>
+              <input matInput type="datetime-local" formControlName="fechaRegistro" />
+              <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('required')">
+                Debes indicar la fecha y hora.
+              </mat-error>
+              <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('invalid')">
+                Formato de fecha inválido.
+              </mat-error>
+            </mat-form-field>
           </div>
         </section>
 

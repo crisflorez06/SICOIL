@@ -239,6 +239,7 @@ public class CarteraService {
                 .cliente(venta.getCliente())
                 .venta(venta)
                 .saldo(totalVenta)
+                .ultimaActualizacion(venta.getFechaRegistro())
                 .build();
 
         Cartera guardada = carteraRepository.save(cartera);
@@ -576,6 +577,7 @@ public class CarteraService {
                 .monto(monto)
                 .usuario(usuario)
                 .observacion(observacion)
+                .fecha(cartera.getUltimaActualizacion())
                 .build();
 
         return carteraMovimientoRepository.save(movimiento);

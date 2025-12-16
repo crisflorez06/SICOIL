@@ -53,6 +53,7 @@ export interface CapitalVentaMensual {
 export interface CapitalInyeccionRequest {
   monto: number;
   descripcion?: string | null;
+  fechaRegistro: string;
 }
 
 export interface CapitalMovimientoFiltro {

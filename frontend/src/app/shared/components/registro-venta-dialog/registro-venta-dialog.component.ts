@@ -13,6 +13,7 @@ import { FiltroClienteResponse, FiltroProductoResponse } from '../../../models/f
 import { MensajeService } from '../../../services/mensaje.service';
 import { Subject } from 'rxjs';
 import { debounceTime, startWith, takeUntil } from 'rxjs/operators';
+import { getCurrentLocalDateTimeInput, normalizeDateTimeInput } from '../../utils/datetime.util';
 
 type ItemVentaRegistrado = {
   productoNombre: string;
@@ -56,6 +57,7 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
   readonly formulario = this.fb.group({
     clienteNombre: ['', Validators.required],
     tipoVenta: ['CONTADO' as 'CONTADO' | 'CREDITO', Validators.required],
+    fechaRegistro: [getCurrentLocalDateTimeInput(), Validators.required],
   });
 
   readonly itemForm = this.fb.group({
@@ -174,11 +176,18 @@ export class RegistroVentaDialogComponent implements OnInit, OnDestroy {
       cantidad: item.cantidad,
       subtotal: item.precioVenta,
     }));
+    const fechaNormalizada = normalizeDateTimeInput(raw.fechaRegistro);
+    if (!fechaNormalizada) {
+      this.formulario.get('fechaRegistro')?.setErrors({ invalid: true });
+      this.formulario.get('fechaRegistro')?.markAsTouched();
+      return;
+    }
 
     const resultado: VentaRequest = {
       clienteId: clienteSeleccionado.id,
       tipoVenta: raw.tipoVenta ?? 'CONTADO',
       items,
+      fechaRegistro: fechaNormalizada,
     };
 
     this.dialogRef.close(resultado);

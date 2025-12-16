@@ -67,7 +67,8 @@ public class CapitalController {
     ) {
         CapitalMovimientoResponse response = capitalService.registrarInyeccionCapital(
                 request.getMonto(),
-                request.getDescripcion()
+                request.getDescripcion(),
+                request.getFechaRegistro()
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -78,7 +79,8 @@ public class CapitalController {
     ) {
         CapitalMovimientoResponse response = capitalService.registrarRetiroCapital(
                 request.getMonto(),
-                request.getDescripcion()
+                request.getDescripcion(),
+                request.getFechaRegistro()
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

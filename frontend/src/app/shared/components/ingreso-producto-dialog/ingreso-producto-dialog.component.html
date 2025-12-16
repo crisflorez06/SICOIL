@@ -60,6 +60,17 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline">
+            <mat-label>Fecha del ingreso</mat-label>
+            <input matInput type="datetime-local" formControlName="fechaRegistro" />
+            <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('required')">
+              Debes especificar la fecha y hora.
+            </mat-error>
+            <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('invalid')">
+              Formato de fecha inválido.
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
             <mat-label>Comentario</mat-label>
             <textarea
               matInput

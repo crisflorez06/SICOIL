@@ -19,6 +19,15 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Fecha del movimiento</mat-label>
+        <input matInput type="datetime-local" formControlName="fechaRegistro" />
+        <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('required')">
+          Debes ingresar la fecha y hora.
+        </mat-error>
+        <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('invalid')">Formato de fecha inválido.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Descripción</mat-label>
         <textarea matInput rows="3" placeholder="Motivo del retiro" formControlName="descripcion"></textarea>
         <mat-hint>Opcional</mat-hint>

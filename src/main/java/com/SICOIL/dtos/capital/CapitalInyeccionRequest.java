@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class CapitalInyeccionRequest {
@@ -14,4 +16,7 @@ public class CapitalInyeccionRequest {
     private Double monto;
 
     private String descripcion;
+
+    private LocalDateTime fechaRegistro;
+
 }

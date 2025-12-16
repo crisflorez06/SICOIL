@@ -33,6 +33,7 @@ export interface VentaRequest {
   clienteId: number;
   tipoVenta: TipoVenta;
   items: DetalleVentaRequest[];
+  fechaRegistro: string;
 }
 
 export interface VentaResponse {

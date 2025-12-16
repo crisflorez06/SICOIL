@@ -12,6 +12,7 @@ import { catchError, debounceTime, distinctUntilChanged, map, startWith, switchM
 import { IngresoProductoRequest, ProductosAgrupadosResponse } from '../../../models/producto.model';
 import { ProductoService } from '../../../services/producto.service';
 import { MensajeService } from '../../../services/mensaje.service';
+import { getCurrentLocalDateTimeInput, normalizeDateTimeInput } from '../../utils/datetime.util';
 
 type IngresoProductoListaEntry = IngresoProductoRequest;
 
@@ -43,6 +44,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
     precioCompra: [null as number | null, [Validators.required, Validators.min(0.01)]],
     cantidad: [null as number | null, [Validators.required, Validators.min(1)]],
     comentario: ['', [Validators.maxLength(250)]],
+    fechaRegistro: [getCurrentLocalDateTimeInput(), Validators.required],
   });
 
   productosRegistrados: IngresoProductoListaEntry[] = [];
@@ -122,11 +124,18 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       this.mensajeService.error('El producto ingresado no existe. Selecciona uno de la lista.');
       return;
     }
+    const fechaNormalizada = normalizeDateTimeInput(payload.fechaRegistro);
+    if (!fechaNormalizada) {
+      this.formulario.get('fechaRegistro')?.setErrors({ invalid: true });
+      this.formulario.get('fechaRegistro')?.markAsTouched();
+      return;
+    }
     const nuevo: IngresoProductoRequest = {
       nombreProducto: payload.nombreProducto ?? '',
       precioCompra: payload.precioCompra ?? 0,
       cantidad: payload.cantidad ?? 0,
       comentario: payload.comentario?.trim() || undefined,
+      fechaRegistro: fechaNormalizada,
     };
     this.productosRegistrados = [
       ...this.productosRegistrados,
@@ -137,6 +146,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       precioCompra: null,
       cantidad: null,
       comentario: '',
+      fechaRegistro: payload.fechaRegistro ?? getCurrentLocalDateTimeInput(),
     });
     this.nombreInvalido = false;
   }
@@ -159,6 +169,7 @@ export class IngresoProductoDialogComponent implements OnInit, OnDestroy {
       precioCompra: item.precioCompra,
       cantidad: item.cantidad,
       comentario: item.comentario,
+      fechaRegistro: item.fechaRegistro,
     }));
     this.dialogRef.close(soloRequests);
   }

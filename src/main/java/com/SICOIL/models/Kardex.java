@@ -59,6 +59,8 @@ public class Kardex {
 
     @PrePersist
     void prePersist() {
-        fechaRegistro = LocalDateTime.now();
+        if (fechaRegistro == null) {
+            fechaRegistro = LocalDateTime.now();
+        }
     }
 }

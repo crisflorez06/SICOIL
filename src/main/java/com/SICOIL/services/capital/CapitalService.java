@@ -102,7 +102,8 @@ public class CapitalService {
                 -total,
                 false,
                 descripcion,
-                usuario
+                usuario,
+                producto.getFechaRegistro()
         );
     }
 
@@ -135,7 +136,8 @@ public class CapitalService {
                 total,
                 false,
                 "Venta contado #" + venta.getId(),
-                usuario
+                usuario,
+                venta.getFechaRegistro()
         );
     }
 
@@ -169,7 +171,8 @@ public class CapitalService {
                 total,
                 true,
                 "Venta crédito #" + venta.getId(),
-                usuario
+                usuario,
+                venta.getFechaRegistro()
         );
     }
 
@@ -219,7 +222,8 @@ public class CapitalService {
                 monto,
                 false,
                 detalle,
-                usuario
+                usuario,
+                LocalDateTime.now()
         );
     }
 
@@ -251,7 +255,8 @@ public class CapitalService {
                 -monto,
                 false,
                 detalle,
-                usuario
+                usuario,
+                LocalDateTime.now()
         );
     }
 
@@ -286,7 +291,8 @@ public class CapitalService {
                     -total,
                     false,
                     "Reverso venta contado #" + venta.getId(),
-                    usuario
+                    usuario,
+                    LocalDateTime.now()
             );
             return;
         }
@@ -296,7 +302,8 @@ public class CapitalService {
                 -total,
                 true,
                 "Reverso venta crédito #" + venta.getId(),
-                usuario
+                usuario,
+                LocalDateTime.now()
         );
     }
 
@@ -320,7 +327,7 @@ public class CapitalService {
      * @return un {@link CapitalMovimientoResponse} con la información del movimiento registrado
      * @throws IllegalArgumentException si el monto es menor o igual a cero
      */
-    public CapitalMovimientoResponse registrarInyeccionCapital(double monto, String descripcion) {
+    public CapitalMovimientoResponse registrarInyeccionCapital(double monto, String descripcion, LocalDateTime fecha) {
         if (monto <= 0) {
             throw new IllegalArgumentException("El monto de la inyección debe ser mayor a cero.");
         }
@@ -334,12 +341,13 @@ public class CapitalService {
                 monto,
                 false,
                 detalle,
-                usuario
+                usuario,
+                fecha
         );
         return capitalMovimientoMapper.toResponse(movimiento);
     }
 
-    public CapitalMovimientoResponse registrarRetiroCapital(double monto, String descripcion) {
+    public CapitalMovimientoResponse registrarRetiroCapital(double monto, String descripcion, LocalDateTime fecha) {
         if (monto <= 0) {
             throw new IllegalArgumentException("El monto del retiro de ganancia debe ser mayor a cero.");
         }
@@ -353,7 +361,8 @@ public class CapitalService {
                 -monto,
                 false,
                 detalle,
-                usuario
+                usuario,
+                fecha
         );
         return capitalMovimientoMapper.toResponse(movimiento);
     }
@@ -521,7 +530,8 @@ public class CapitalService {
                                                   double monto,
                                                   boolean esCredito,
                                                   String descripcion,
-                                                  Usuario usuario) {
+                                                  Usuario usuario,
+                                                  LocalDateTime fecha) {
         CapitalMovimiento movimiento = CapitalMovimiento.builder()
                 .origen(origen)
                 .referenciaId(referenciaId)
@@ -529,6 +539,7 @@ public class CapitalService {
                 .esCredito(esCredito)
                 .descripcion(descripcion)
                 .usuario(usuario)
+                .creadoEn(fecha)
                 .build();
         log.info("Registrando movimiento de capital origen={} referencia={} monto={} esCredito={}",
                 origen, referenciaId, monto, esCredito);

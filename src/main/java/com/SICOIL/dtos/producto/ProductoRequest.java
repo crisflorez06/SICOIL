@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,5 +29,8 @@ public class ProductoRequest {
     private Integer stock;
 
     private String comentario;
+
+    @NotNull
+    private LocalDateTime fechaRegistro;
 
 }

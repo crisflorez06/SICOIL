@@ -3,6 +3,7 @@ export interface ProductoRequest {
   cantidadPorCajas: number;
   precioCompra: number;
   stock: number;
+  fechaRegistro: string;
 }
 
 export interface ProductoResponse {
@@ -45,6 +46,7 @@ export interface IngresoProductoRequest {
   precioCompra: number;
   cantidad: number;
   comentario?: string | null;
+  fechaRegistro: string;
 }
 
 export interface InventarioSalidaRequest {

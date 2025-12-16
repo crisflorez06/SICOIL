@@ -61,7 +61,7 @@ public class InventarioService {
         producto.setStock(stockActual + cantidad);
 
         Producto guardado = productoRepository.save(producto);
-        kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.ENTRADA);
+        kardexService.registrarMovimiento(guardado, cantidad, observacion, MovimientoTipo.ENTRADA, guardado.getFechaRegistro());
         return guardado;
     }
 
@@ -128,7 +128,7 @@ public class InventarioService {
         producto.setStock(nuevoStock);
 
         Producto guardado = productoRepository.save(producto);
-        kardexService.registrarMovimiento(guardado, cantidad, observacion, tipoFinal);
+        kardexService.registrarMovimiento(guardado, cantidad, observacion, tipoFinal, guardado.getFechaRegistro());
 
         return guardado;
     }
@@ -174,10 +174,11 @@ public class InventarioService {
                 .cantidadPorCajas(productoDb.getCantidadPorCajas())
                 .stock(request.getCantidad())
                 .comentario(request.getComentario())
+                .fechaRegistro(request.getFechaRegistro())
                 .build();
 
         Producto guardado = productoRepository.save(productoNuevoPrecio);
-        kardexService.registrarMovimiento(guardado, request.getCantidad(), request.getComentario(), MovimientoTipo.ENTRADA);
+        kardexService.registrarMovimiento(guardado, request.getCantidad(), request.getComentario(), MovimientoTipo.ENTRADA, guardado.getFechaRegistro());
         capitalService.registrarIngresoInventario(
                 guardado,
                 request.getPrecioCompra(),
@@ -212,7 +213,7 @@ public class InventarioService {
             return;
         }
         log.info("Registrando movimiento de stock inicial para producto {} cantidad {}", producto.getId(), stockInicial);
-        kardexService.registrarMovimiento(producto, stockInicial, observacion, MovimientoTipo.ENTRADA);
+        kardexService.registrarMovimiento(producto, stockInicial, observacion, MovimientoTipo.ENTRADA, producto.getFechaRegistro());
         Double costoUnitario = producto.getPrecioCompra();
         if (costoUnitario != null && costoUnitario > 0) {
             capitalService.registrarIngresoInventario(

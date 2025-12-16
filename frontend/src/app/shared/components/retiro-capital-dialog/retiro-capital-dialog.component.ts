@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 import { CapitalInyeccionRequest } from '../../../models/capital.model';
+import { getCurrentLocalDateTimeInput, normalizeDateTimeInput } from '../../utils/datetime.util';
 
 @Component({
   selector: 'app-retiro-capital-dialog',
@@ -29,6 +30,7 @@ export class RetiroCapitalDialogComponent {
   readonly formulario = this.fb.group({
     monto: [null as number | null, [Validators.required, Validators.min(0.01)]],
     descripcion: ['', [Validators.maxLength(250)]],
+    fechaRegistro: [getCurrentLocalDateTimeInput(), Validators.required],
   });
 
   cancelar(): void {
@@ -52,10 +54,17 @@ export class RetiroCapitalDialogComponent {
       this.formulario.get('monto')?.markAsTouched();
       return;
     }
+    const fechaNormalizada = normalizeDateTimeInput(payload.fechaRegistro);
+    if (!fechaNormalizada) {
+      this.formulario.get('fechaRegistro')?.setErrors({ invalid: true });
+      this.formulario.get('fechaRegistro')?.markAsTouched();
+      return;
+    }
 
     const resultado: CapitalInyeccionRequest = {
       monto,
       descripcion: payload.descripcion?.trim() || undefined,
+      fechaRegistro: fechaNormalizada,
     };
     this.dialogRef.close(resultado);
   }

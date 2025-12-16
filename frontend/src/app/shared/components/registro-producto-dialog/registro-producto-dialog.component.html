@@ -53,6 +53,17 @@
         <mat-error *ngIf="formulario.get('stock')?.hasError('required')">Este campo es obligatorio.</mat-error>
         <mat-error *ngIf="formulario.get('stock')?.hasError('min')">No puede ser negativo.</mat-error>
       </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fecha del registro</mat-label>
+        <input matInput type="datetime-local" formControlName="fechaRegistro" />
+        <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('required')">
+          Debes especificar la fecha y hora.
+        </mat-error>
+        <mat-error *ngIf="formulario.get('fechaRegistro')?.hasError('invalid')">
+          Formato de fecha inválido.
+        </mat-error>
+      </mat-form-field>
     </form>
   </div>
 

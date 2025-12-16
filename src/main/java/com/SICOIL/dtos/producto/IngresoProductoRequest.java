@@ -5,6 +5,8 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class IngresoProductoRequest {
@@ -21,4 +23,8 @@ public class IngresoProductoRequest {
     private Integer cantidad;
 
     private String comentario;
+
+    private LocalDateTime fechaRegistro;
+
+
 }

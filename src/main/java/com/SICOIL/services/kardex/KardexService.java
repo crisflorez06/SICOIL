@@ -8,6 +8,8 @@ import com.SICOIL.models.Producto;
 import com.SICOIL.repositories.KardexRepository;
 import com.SICOIL.services.usuario.UsuarioService;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -88,7 +90,8 @@ public class KardexService {
     public Kardex registrarMovimiento(Producto producto,
                                       Integer cantidad,
                                       String comentario,
-                                      MovimientoTipo tipo) {
+                                      MovimientoTipo tipo,
+                                      LocalDateTime fecha) {
 
         log.info("Registrando movimiento en kardex. Producto={} tipo={} cantidad={}", producto.getId(), tipo, cantidad);
         Kardex movimiento = Kardex.builder()
@@ -97,6 +100,7 @@ public class KardexService {
                 .cantidad(cantidad)
                 .tipo(tipo)
                 .comentario(comentario)
+                .fechaRegistro(fecha)
                 .build();
 
         return kardexRepository.save(movimiento);

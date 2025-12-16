@@ -15,8 +15,10 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface ProductoMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "fechaRegistro", source = "fechaRegistro")
     Producto requestToEntity(ProductoRequest request);
 
+    @Mapping(target = "fechaRegistro", source = "fechaRegistro")
     @Mapping(target = "id", ignore = true)
     void updateEntityFromRequest(ProductoRequest request, @MappingTarget Producto entity);
 
