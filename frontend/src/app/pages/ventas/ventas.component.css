@@ -96,6 +96,45 @@
   margin-top: 0.5rem;
 }
 
+.ventas-resumen-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.ventas-resumen-filtros__item {
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  min-width: 200px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.ventas-resumen-filtros__item--contado {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: linear-gradient(120deg, rgba(16, 185, 129, 0.22), rgba(15, 23, 42, 0.5));
+}
+
+.ventas-resumen-filtros__item--credito {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: linear-gradient(120deg, rgba(250, 204, 21, 0.22), rgba(15, 23, 42, 0.5));
+}
+
+.ventas-resumen-filtros__label {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.8);
+}
+
+.ventas-resumen-filtros__value {
+  display: block;
+  font-size: 1.35rem;
+  margin-top: 0.2rem;
+}
+
 .ventas-filters {
   flex: 1 1 320px;
   display: flex;

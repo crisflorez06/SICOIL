@@ -1,0 +1,148 @@
+<section class="registro-wrapper">
+  <div class="registro-card shadow-lg">
+    <div class="info-panel">
+      <div class="pill">Acceso privado</div>
+      <h1>Crea un usuario para <span>SICOIL</span></h1>
+      <p class="lead">
+        Esta pantalla no se muestra en los menús. Solo quienes tengan el enlace directo pueden
+        registrar un nuevo usuario.
+      </p>
+
+      <div class="highlights">
+        <div>
+          <span class="dot"></span>
+          Contraseña mínima de 6 caracteres.
+        </div>
+        <div>
+          <span class="dot"></span>
+          El usuario se crea de inmediato si los datos son válidos.
+        </div>
+        <div>
+          <span class="dot"></span>
+          Luego podrás iniciar sesión en la plataforma.
+        </div>
+      </div>
+    </div>
+
+    <div class="form-panel">
+      <div class="mb-4 text-center">
+        <h2 class="form-title">Registro interno</h2>
+        <p class="text-muted mb-0">Completa los campos para crear el acceso</p>
+      </div>
+
+      <form [formGroup]="formulario" (ngSubmit)="registrar()" novalidate>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="usuario">Usuario</label>
+          <div class="input-wrapper">
+            <input
+              id="usuario"
+              type="text"
+              class="form-control"
+              placeholder="usuario@empresa.com"
+              formControlName="usuario"
+              [class.is-invalid]="mostrarError('usuario') || formulario.get('usuario')?.errors?.['backend']"
+              autocomplete="username"
+            />
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6" />
+              </svg>
+            </span>
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.hasError('required')">
+            Ingresa un usuario.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.hasError('maxlength')">
+            Máximo 100 caracteres.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('usuario')?.errors?.['backend']">
+            {{ formulario.get('usuario')?.errors?.['backend'] }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="contrasena">Contraseña</label>
+          <div class="input-wrapper">
+            <input
+              id="contrasena"
+              type="password"
+              class="form-control"
+              placeholder="********"
+              formControlName="contrasena"
+              [class.is-invalid]="mostrarError('contrasena') || formulario.get('contrasena')?.errors?.['backend']"
+              autocomplete="new-password"
+            />
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M12 3l7 3v6.5c0 4.2-2.6 8-7 8s-7-3.8-7-8V6z" />
+                <circle cx="12" cy="11.5" r="1.7" />
+                <path d="M12 13.5v2.5" />
+              </svg>
+            </span>
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('required')">
+            Ingresa una contraseña.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('minlength')">
+            Debe tener al menos 6 caracteres.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.hasError('maxlength')">
+            Máximo 120 caracteres.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('contrasena')?.errors?.['backend']">
+            {{ formulario.get('contrasena')?.errors?.['backend'] }}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="confirmarContrasena">Confirmar contraseña</label>
+          <div class="input-wrapper">
+            <input
+              id="confirmarContrasena"
+              type="password"
+              class="form-control"
+              placeholder="********"
+              formControlName="confirmarContrasena"
+              [class.is-invalid]="
+                mostrarError('confirmarContrasena') ||
+                formulario.get('confirmarContrasena')?.errors?.['backend'] ||
+                formulario.get('confirmarContrasena')?.errors?.['mismatch']
+              "
+              autocomplete="new-password"
+            />
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M8 12l2.5 2.5L16 9" />
+                <path d="M12 3l7 3v6.5c0 4.2-2.6 8-7 8s-7-3.8-7-8V6z" />
+              </svg>
+            </span>
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('confirmarContrasena')?.hasError('required')">
+            Confirma la contraseña.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('confirmarContrasena')?.hasError('minlength')">
+            Debe tener al menos 6 caracteres.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('confirmarContrasena')?.hasError('maxlength')">
+            Máximo 120 caracteres.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('confirmarContrasena')?.errors?.['mismatch']">
+            Las contraseñas no coinciden.
+          </div>
+          <div class="invalid-feedback" *ngIf="formulario.get('confirmarContrasena')?.errors?.['backend']">
+            {{ formulario.get('confirmarContrasena')?.errors?.['backend'] }}
+          </div>
+        </div>
+
+        <div class="alert alert-danger py-2" *ngIf="formulario.errors?.['backend']" role="alert">
+          {{ formulario.errors?.['backend'] }}
+        </div>
+
+        <button class="btn btn-gradient w-100" type="submit" [disabled]="enviando">
+          {{ enviando ? 'Creando usuario...' : 'Crear usuario' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</section>

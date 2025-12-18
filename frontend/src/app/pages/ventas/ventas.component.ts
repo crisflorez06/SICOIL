@@ -49,6 +49,7 @@ export class VentasComponent implements OnInit {
   private anulandoVentas = new Set<number>();
   private comprobantesDescargando = new Set<number>();
   tablaScrollActiva = false;
+  filtrosAplicados = false;
 
   ngOnInit(): void {
     this.cargarVentas();
@@ -128,6 +129,7 @@ export class VentasComponent implements OnInit {
 
   buscarVentas(): void {
     this.paginaActual = 0;
+    this.filtrosAplicados = this.filtrosActivos;
     this.cargarVentas();
   }
 
@@ -148,6 +150,7 @@ export class VentasComponent implements OnInit {
     this.filtroEstado = 'predeterminado';
     this.filtroDesde = '';
     this.filtroHasta = '';
+    this.filtrosAplicados = false;
     this.buscarVentas();
   }
 
@@ -168,6 +171,29 @@ export class VentasComponent implements OnInit {
 
   get paginas(): number[] {
     return Array.from({ length: this.totalPaginas }, (_, index) => index);
+  }
+
+  get filtrosActivos(): boolean {
+    return (
+      this.filtroNombreCliente.trim() !== '' ||
+      this.filtroNombreUsuario.trim() !== '' ||
+      this.filtroTipoVenta !== '' ||
+      this.filtroEstado !== 'predeterminado' ||
+      this.filtroDesde !== '' ||
+      this.filtroHasta !== ''
+    );
+  }
+
+  get totalVentasContadoFiltradas(): number {
+    return this.ventas
+      .filter((venta) => venta.tipoVenta === 'CONTADO')
+      .reduce((total, venta) => total + Number(venta.totalVenta ?? 0), 0);
+  }
+
+  get totalVentasCreditoFiltradas(): number {
+    return this.ventas
+      .filter((venta) => venta.tipoVenta === 'CREDITO')
+      .reduce((total, venta) => total + Number(venta.totalVenta ?? 0), 0);
   }
 
   toggleItems(index: number): void {

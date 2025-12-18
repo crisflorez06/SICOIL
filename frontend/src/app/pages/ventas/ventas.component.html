@@ -41,6 +41,20 @@
           </ng-container>
         </button>
       </div>
+      <div class="ventas-resumen-filtros" *ngIf="filtrosAplicados && filtrosActivos">
+        <div class="ventas-resumen-filtros__item ventas-resumen-filtros__item--contado">
+          <p class="ventas-resumen-filtros__label">Total contado</p>
+          <strong class="ventas-resumen-filtros__value">
+            {{ totalVentasContadoFiltradas | currency:'COP':'symbol-narrow':'1.0-0' }}
+          </strong>
+        </div>
+        <div class="ventas-resumen-filtros__item ventas-resumen-filtros__item--credito">
+          <p class="ventas-resumen-filtros__label">Total crédito</p>
+          <strong class="ventas-resumen-filtros__value">
+            {{ totalVentasCreditoFiltradas | currency:'COP':'symbol-narrow':'1.0-0' }}
+          </strong>
+        </div>
+      </div>
     </div>
 
     <form class="ventas-filters" novalidate (ngSubmit)="buscarVentas()">
@@ -193,7 +207,7 @@
               </td>
               <td>
                 <div class="venta-date">
-                  <span>{{ venta.fechaRegistro | date:'mediumDate' }}</span>
+                  <span>{{ venta.fechaRegistro | date:'dd/MM/yyyy' }}</span>
                   <small class="text-muted">{{ venta.fechaRegistro | date:'shortTime' }}</small>
                 </div>
               </td>
